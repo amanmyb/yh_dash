@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Youth Hostel Dashboard (Live)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1c2530; --muted:#67717d;
+    --accent:#1d5cff; --accent2:#7c4dff; --good:#1a9e6d; --bad:#d64545; --warn:#e0a021;
+    --border:#e4e8ed;
+    padding-top: env(safe-area-inset-top,0px);
+    padding-bottom: env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --bg:#12161c; --card:#1a2029; --ink:#eef1f5; --muted:#9aa4b2; --border:#2a323d; }
+  }
+  :root[data-theme="dark"]{ --bg:#12161c; --card:#1a2029; --ink:#eef1f5; --muted:#9aa4b2; --border:#2a323d; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 16px 60px;}
+  header{margin-bottom:10px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;}
+  header h1{font-size:22px;margin:0 0 4px;}
+  header p{margin:0;color:var(--muted);font-size:13px;}
+  .refresh-box{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+  .refresh-box button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;cursor:pointer;}
+  .refresh-box button:disabled{opacity:0.6;cursor:default;}
+  #statusLine{font-size:12px;margin-bottom:16px;}
+  #statusLine.ok{color:var(--good);}
+  #statusLine.err{color:var(--bad);}
+  #statusLine.loading{color:var(--muted);}
+
+  nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;position:sticky;top:0;background:var(--bg);
+    padding:8px 0;z-index:5;border-bottom:1px solid var(--border);}
+  nav.tabs button{background:var(--card);color:var(--ink);border:1px solid var(--border);border-radius:999px;
+    padding:7px 14px;font-size:12.5px;cursor:pointer;white-space:nowrap;}
+  nav.tabs button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+  .kpi .num{font-size:24px;font-weight:700;}
+  .kpi .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+  .kpi.good .num{color:var(--good);} .kpi.bad .num{color:var(--bad);} .kpi.warn .num{color:var(--warn);}
+
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;margin-bottom:16px;}
+  @media (max-width:800px){.grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;overflow:auto;margin-bottom:16px;}
+  .card h2{font-size:15px;margin:0 0 12px;}
+  .card p.hint{color:var(--muted);font-size:12px;margin:-6px 0 12px;}
+
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  select, input[type=text]{background:var(--card);color:var(--ink);border:1px solid var(--border);
+    border-radius:8px;padding:8px 10px;font-size:13px;}
+  input[type=text]{flex:1;min-width:160px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--card);}
+  tr:hover td{background:rgba(29,92,255,0.05);}
+  .tbl-wrap{max-height:440px;overflow:auto;border:1px solid var(--border);border-radius:8px;}
+
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+  .pill.Functional{background:rgba(26,158,109,0.15);color:var(--good);}
+  .pill.NonFunctional{background:rgba(214,69,69,0.15);color:var(--bad);}
+  .pill.YettoStart{background:rgba(224,160,33,0.15);color:var(--warn);}
+  .pill.EXPIRED{background:rgba(214,69,69,0.15);color:var(--bad);}
+  .pill.ExpiringSoon{background:rgba(224,160,33,0.15);color:var(--warn);}
+  .pill.Active{background:rgba(26,158,109,0.15);color:var(--good);}
+  .pill.Yes{background:rgba(214,69,69,0.15);color:var(--bad);}
+  .pill.No{background:rgba(26,158,109,0.15);color:var(--good);}
+
+  .barrow{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px;}
+  .barrow .label{width:150px;flex-shrink:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .barrow .track{flex:1;background:var(--border);border-radius:6px;height:10px;overflow:hidden;}
+  .barrow .fill{height:100%;background:var(--accent);}
+  .barrow .val{width:56px;text-align:right;font-weight:600;flex-shrink:0;}
+
+  a.maplink{color:var(--accent);text-decoration:none;font-size:12px;font-weight:600;}
+  a.maplink:hover{text-decoration:underline;}
+
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px;flex-wrap:wrap;}
+  .legend span.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;}
+
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:30px;}
+  .section{display:none;}
+  .section.active{display:block;}
+  .badge-count{background:var(--accent);color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;margin-left:5px;}
+  .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);
+    border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #loadingOverlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:12px;z-index:50;}
+  #loadingOverlay .big-spinner{width:36px;height:36px;border:4px solid var(--border);border-top-color:var(--accent);
+    border-radius:50%;animation:spin 0.9s linear infinite;}
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="big-spinner"></div>
+  <div style="color:var(--muted);font-size:13px;">Loading live data from Google Sheets…</div>
+</div>
+
+<div class="wrap" id="mainWrap" style="display:none;">
+  <header>
+    <div>
+      <h1>🏨 Youth Hostel Dashboard <span style="font-size:12px;font-weight:600;background:var(--good);color:#fff;padding:2px 8px;border-radius:999px;vertical-align:middle;">LIVE</span></h1>
+      <p>MY Bharat — Ministry of Youth Affairs & Sports · Pulled live from published Google Sheets</p>
+    </div>
+    <div class="refresh-box">
+      <span id="lastUpdated"></span>
+      <button id="refreshBtn">↻ Refresh now</button>
+    </div>
+  </header>
+  <div id="statusLine" class="loading"></div>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="overview" class="active">Overview</button>
+    <button data-tab="occupancy">Occupancy</button>
+    <button data-tab="finance">Expenditure & Revenue</button>
+    <button data-tab="staff">Staff & Wardens</button>
+    <button data-tab="land">Land, Site & Disputes</button>
+    <button data-tab="map">Map Pins</button>
+    <button data-tab="resource">Resource Centre</button>
+    <button data-tab="registry">Full Registry</button>
+  </nav>
+
+  <section class="section active" id="overview">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid">
+      <div class="card"><h2>Hostels by State (top 15)</h2><div id="stateChart"></div></div>
+      <div class="card">
+        <h2>Status Breakdown</h2><div id="statusChart"></div>
+        <h2 style="margin-top:18px;">Category</h2><div id="catChart"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="occupancy">
+    <div class="card">
+      <h2>Average Annual Occupancy % — All Hostels (5 yrs)</h2>
+      <p class="hint">Average of reported annual occupancy across hostels with data.</p>
+      <svg id="occLineAll" width="100%" height="220" viewBox="0 0 900 220" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div class="card">
+      <h2>Occupancy by Hostel</h2>
+      <div class="controls"><select id="occHostelSelect"></select></div>
+      <svg id="occLineOne" width="100%" height="220" viewBox="0 0 900 220" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </section>
+
+  <section class="section" id="finance">
+    <div class="kpis" id="finKpis"></div>
+    <div class="card">
+      <h2>Total Revenue vs Expenditure — All Hostels (5 yrs, ₹)</h2>
+      <svg id="finChart" width="100%" height="240" viewBox="0 0 900 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="legend">
+        <span><span class="dot" style="background:#1d5cff"></span>Revenue</span>
+        <span><span class="dot" style="background:#d64545"></span>Expenditure</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Top 10 Hostels by Latest-Year Expenditure</h2>
+      <div id="expChart"></div>
+    </div>
+  </section>
+
+  <section class="section" id="staff">
+    <div class="kpis" id="staffKpis"></div>
+    <div class="grid">
+      <div class="card"><h2>Sanctioned vs Employed Staff (Total)</h2><div id="staffBar"></div></div>
+      <div class="card"><h2>Warden Contract Status</h2><div id="wardenStatusChart"></div></div>
+    </div>
+    <div class="card">
+      <h2>Wardens / Managers — Contract Register <span class="badge-count" id="wardenCount"></span></h2>
+      <div class="tbl-wrap">
+        <table id="wardenTbl">
+          <thead><tr><th>#</th><th>State</th><th>District</th><th>Name</th><th>Contract Expiry</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="land">
+    <div class="kpis" id="landKpis"></div>
+    <div class="card">
+      <h2>Disputed / Encroached Land <span class="badge-count" id="disputeCount"></span></h2>
+      <div class="tbl-wrap">
+        <table id="disputeTbl">
+          <thead><tr><th>#</th><th>State</th><th>District</th><th>Hostel</th><th>Dispute?</th><th>Encroachment?</th><th>Details</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Land & Site Plan — All Hostels</h2>
+      <div class="tbl-wrap">
+        <table id="landTbl">
+          <thead><tr><th>#</th><th>State</th><th>District</th><th>Hostel</th><th>Total Land</th><th>Built-up Area</th><th>Open Area</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="map">
+    <div class="card">
+      <h2>Hostel Locations <span class="badge-count" id="mapCount"></span></h2>
+      <p class="hint">Coordinates parsed live from the Land & Legal sheet's Google Map links (where available). Click a pin/row to open it in Google Maps.</p>
+      <svg id="indiaScatter" width="100%" height="460" viewBox="0 0 700 460" preserveAspectRatio="xMidYMid meet" style="background:var(--bg);border-radius:8px;"></svg>
+    </div>
+    <div class="card">
+      <h2>All Geo-tagged Hostels</h2>
+      <div class="tbl-wrap">
+        <table id="mapTbl">
+          <thead><tr><th>#</th><th>State</th><th>District</th><th>Hostel</th><th>Coordinates</th><th>Open</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="resource">
+    <div class="kpis" id="resourceKpis"></div>
+    <div class="card">
+      <h2>Youth Resource Hub — Conversion Feasibility</h2>
+      <div class="tbl-wrap">
+        <table id="resourceTbl">
+          <thead><tr><th>#</th><th>State</th><th>District</th><th>Hostel</th><th>Feasible?</th><th>Conversion Plan</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="registry">
+    <div class="card">
+      <h2>Hostel Registry — Full List</h2>
+      <div class="controls">
+        <input type="text" id="search" placeholder="Search state, district or hostel name...">
+        <select id="statusFilter"><option value="">All statuses</option></select>
+        <select id="stateFilter"><option value="">All states</option></select>
+      </div>
+      <div class="tbl-wrap">
+        <table id="tbl">
+          <thead><tr><th>#</th><th>State/UT</th><th>District</th><th>Hostel</th><th>Category</th><th>Status</th><th>Beds</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer>Live dashboard · Pulls directly from published Google Sheets CSVs on every load · Click "Refresh now" to re-pull without reloading the page</footer>
+</div>
+
+<script>
+// ====== CONFIGURE YOUR PUBLISHED SHEET CSV URLS HERE ======
+const SHEET_URLS = {
+  registry:     "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRrrSaddwalbPlUTWsFlqxuPcD4KUR0IzM6rFbnmltneNnzo8saKw5UXB5Wfz0LSpx9mDxwYwdDNkF/pub?gid=2016019496&single=true&output=csv",
+  land:         "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRrrSaddwalbPlUTWsFlqxuPcD4KUR0IzM6rFbnmltneNnzo8saKw5UXB5Wfz0LSpx9mDxwYwdDNkF/pub?gid=1533365557&single=true&output=csv",
+  occupancy:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRrrSaddwalbPlUTWsFlqxuPcD4KUR0IzM6rFbnmltneNnzo8saKw5UXB5Wfz0LSpx9mDxwYwdDNkF/pub?gid=765196567&single=true&output=csv",
+  financials:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRrrSaddwalbPlUTWsFlqxuPcD4KUR0IzM6rFbnmltneNnzo8saKw5UXB5Wfz0LSpx9mDxwYwdDNkF/pub?gid=2012382892&single=true&output=csv",
+  admin:        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRrrSaddwalbPlUTWsFlqxuPcD4KUR0IzM6rFbnmltneNnzo8saKw5UXB5Wfz0LSpx9mDxwYwdDNkF/pub?gid=429375602&single=true&output=csv",
+  wardens:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRrrSaddwalbPlUTWsFlqxuPcD4KUR0IzM6rFbnmltneNnzo8saKw5UXB5Wfz0LSpx9mDxwYwdDNkF/pub?gid=373918724&single=true&output=csv",
+  resourceHub:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRrrSaddwalbPlUTWsFlqxuPcD4KUR0IzM6rFbnmltneNnzo8saKw5UXB5Wfz0LSpx9mDxwYwdDNkF/pub?gid=980543383&single=true&output=csv",
+};
+// ============================================================
+
+const YEARS = ['2022-21','2023-22','2024-23','2025-24','2026-25'];
+
+function key(state, district){ return `${(state||'').trim()}|${(district||'').trim()}`; }
+function cls(s){ return (s||'').replace(/[\s?]/g,''); }
+function fmtCr(n){ if(n==null || isNaN(n)) return '—'; return (n/10000000).toFixed(2)+' Cr'; }
+function num(v){ const n = parseFloat(String(v||'').replace(/[,₹\s]/g,'')); return isNaN(n)? null : n; }
+
+function dmsToDd(deg,min,sec,hemi){ let dd = parseFloat(deg)+parseFloat(min)/60+parseFloat(sec)/3600; if(hemi==='S'||hemi==='W') dd=-dd; return dd; }
+
+function parseLatLong(s){
+  if(!s) return null;
+  s = String(s);
+  let m = s.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if(m) return [parseFloat(m[1]), parseFloat(m[2])];
+  m = s.match(/[?&]q=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if(m) return [parseFloat(m[1]), parseFloat(m[2])];
+  m = s.match(/Lat[a-z]*\.?\s*[:\-]?\s*(-?\d{1,3}\.\d+)[\s\S]{0,15}?Long[a-z]*\.?\s*[:\-]?\s*(-?\d{1,3}\.\d+)/i);
+  if(m) return [parseFloat(m[1]), parseFloat(m[2])];
+  const dmsMatches = [...s.matchAll(/(\d{1,3})[°]\s*(\d{1,2})['’]\s*([\d.]+)["”]?\s*([NSEW])/g)];
+  if(dmsMatches.length >= 2){
+    const lat = dmsToDd(dmsMatches[0][1],dmsMatches[0][2],dmsMatches[0][3],dmsMatches[0][4]);
+    const lon = dmsToDd(dmsMatches[1][1],dmsMatches[1][2],dmsMatches[1][3],dmsMatches[1][4]);
+    return [lat, lon];
+  }
+  m = s.match(/(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{2,3}\.\d{3,})/);
+  if(m) return [parseFloat(m[1]), parseFloat(m[2])];
+  return null;
+}
+
+async function fetchCsv(url){
+  const bust = url + (url.includes('?') ? '&' : '?') + '_cb=' + Date.now();
+  const res = await fetch(bust, {cache:'no-store'});
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const text = await res.text();
+  const parsed = Papa.parse(text.trim(), {skipEmptyLines:false});
+  return parsed.data; // array of arrays, row 0 = title, row1 = hint, row2 = header, row3+ = data
+}
+
+function dataRows(rows){ return rows.slice(3).filter(r => r.some(v => v && String(v).trim()!=='')); }
+
+let DATA = [];
+let WARDENS = [];
+
+async function loadAll(){
+  document.getElementById('statusLine').className = 'loading';
+  document.getElementById('statusLine').innerHTML = '<span class="spinner"></span>Fetching live data from 7 published sheets…';
+  try{
+    const [regRows, landRows, occRows, finRows, adminRows, wardRows, yrhRows] = await Promise.all([
+      fetchCsv(SHEET_URLS.registry), fetchCsv(SHEET_URLS.land), fetchCsv(SHEET_URLS.occupancy),
+      fetchCsv(SHEET_URLS.financials), fetchCsv(SHEET_URLS.admin), fetchCsv(SHEET_URLS.wardens),
+      fetchCsv(SHEET_URLS.resourceHub)
+    ]);
+
+    const registry = {}; const order = [];
+    dataRows(regRows).forEach(r=>{
+      const k = key(r[1], r[2]);
+      registry[k] = {
+        state: r[1], district: r[2], category: r[3], status: r[4], name: r[5],
+        manager: r[6], warden: r[7], beds: num(r[11])
+      };
+      order.push(k);
+    });
+
+    const land = {};
+    dataRows(landRows).forEach(r=>{
+      const k = key(r[1], r[2]);
+      land[k] = {
+        maplink: r[6], latlong: parseLatLong(r[6]),
+        total_land: r[13], built_up: r[14], open_area: r[15],
+        dispute: r[22], dispute_details: r[23], encroachment: r[24]
+      };
+    });
+
+    const occupancy = {};
+    dataRows(occRows).forEach(r=>{
+      const k = key(r[1], r[2]);
+      occupancy[k] = [num(r[3]), num(r[4]), num(r[5]), num(r[6]), num(r[7])]; // newest-first
+    });
+
+    const fin = {};
+    dataRows(finRows).forEach(r=>{
+      const k = key(r[1], r[2]);
+      fin[k] = {
+        revenue: [num(r[3]), num(r[4]), num(r[5]), num(r[6]), num(r[7])],
+        expenditure: [num(r[8]), num(r[9]), num(r[10]), num(r[11]), num(r[12])]
+      };
+    });
+
+    const admin = {};
+    dataRows(adminRows).forEach(r=>{
+      const k = key(r[1], r[2]);
+      admin[k] = { sanctioned: num(r[10]), employed: num(r[14]) };
+    });
+
+    const yrh = {};
+    dataRows(yrhRows).forEach(r=>{
+      const k = key(r[1], r[2]);
+      yrh[k] = { facility: r[4], plan: r[5] };
+    });
+
+    WARDENS = dataRows(wardRows).map(r=>({
+      state: r[1], district: r[2], name: r[3], expiry: r[7], status: r[8]
+    }));
+
+    DATA = order.map(k=>{
+      const base = registry[k]; const l = land[k]||{}; const o = occupancy[k]||[null,null,null,null,null];
+      const a = admin[k]||{}; const f = fin[k]||{}; const y = yrh[k]||{};
+      return {
+        ...base,
+        maplink: l.maplink, latlong: l.latlong, total_land: l.total_land, built_up: l.built_up,
+        open_area: l.open_area, dispute: l.dispute, dispute_details: l.dispute_details, encroachment: l.encroachment,
+        occupancy: o, sanctioned_staff: a.sanctioned, employed_staff: a.employed,
+        revenue: f.revenue, expenditure: f.expenditure, yrh_facility: y.facility, yrh_plan: y.plan
+      };
+    });
+
+    document.getElementById('statusLine').className = 'ok';
+    document.getElementById('statusLine').textContent = `✓ Live data loaded — ${DATA.length} hostels, ${WARDENS.length} wardens.`;
+    document.getElementById('lastUpdated').textContent = 'Last refreshed: ' + new Date().toLocaleString('en-IN');
+    renderAll();
+  }catch(err){
+    document.getElementById('statusLine').className = 'err';
+    document.getElementById('statusLine').textContent = '⚠ Could not fetch live data (' + err.message + '). Check the sheet is still published and links are correct.';
+    console.error(err);
+  }finally{
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('mainWrap').style.display = 'block';
+  }
+}
+
+document.getElementById('refreshBtn').addEventListener('click', ()=>{
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true; btn.textContent = 'Refreshing…';
+  loadAll().finally(()=>{ btn.disabled = false; btn.textContent = '↻ Refresh now'; });
+});
+
+// ---------- TABS ----------
+document.querySelectorAll('#tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+function barChart(elId, entries){
+  const max = Math.max(...entries.map(e=>e[1]||0), 1);
+  document.getElementById(elId).innerHTML = entries.map(([label,val])=>
+    `<div class="barrow"><div class="label">${label}</div><div class="track"><div class="fill" style="width:${((val||0)/max*100)}%"></div></div><div class="val">${typeof val==='number'&&val>999? val.toLocaleString('en-IN'): (val==null?'—':val)}</div></div>`
+  ).join('');
+}
+
+function chronological(arr){ return arr ? [...arr].reverse() : [null,null,null,null,null]; }
+
+function drawLineChart(svgId, seriesArr, colors, yMax){
+  const svg = document.getElementById(svgId);
+  const W=900,H=220,padL=45,padR=20,padT=15,padB=30;
+  const n = YEARS.length;
+  const x = i => padL + (i/(n-1))*(W-padL-padR);
+  const flatVals = seriesArr.flat().filter(v=>v!=null);
+  const maxVal = yMax || Math.max(1, ...(flatVals.length?flatVals:[1]));
+  const y = v => H-padB - (v/maxVal)*(H-padT-padB);
+  let svgContent = '';
+  for(let g=0; g<=4; g++){
+    const gv = maxVal*g/4;
+    svgContent += `<line x1="${padL}" y1="${y(gv)}" x2="${W-padR}" y2="${y(gv)}" stroke="var(--border)" stroke-width="1"/>`;
+    svgContent += `<text x="${padL-6}" y="${y(gv)+4}" font-size="10" fill="var(--muted)" text-anchor="end">${Math.round(gv)}</text>`;
+  }
+  YEARS.forEach((yr,i)=>{ svgContent += `<text x="${x(i)}" y="${H-8}" font-size="10" fill="var(--muted)" text-anchor="middle">${yr}</text>`; });
+  seriesArr.forEach((series, si)=>{
+    const pts = series.map((v,i)=> v==null? null : `${x(i)},${y(v)}`).filter(Boolean).join(' ');
+    svgContent += `<polyline points="${pts}" fill="none" stroke="${colors[si]}" stroke-width="2.5"/>`;
+    series.forEach((v,i)=>{ if(v!=null) svgContent += `<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="${colors[si]}"/>`; });
+  });
+  svg.innerHTML = svgContent;
+}
+
+function renderAll(){
+  // OVERVIEW
+  const total = DATA.length;
+  const functional = DATA.filter(d=>d.status==='Functional').length;
+  const nonFunctional = DATA.filter(d=>d.status==='Non Functional').length;
+  const yetToStart = DATA.filter(d=>d.status==='Yet to Start').length;
+  const totalBeds = DATA.reduce((s,d)=> s + (typeof d.beds==='number'? d.beds:0), 0);
+  const states = new Set(DATA.map(d=>d.state)).size;
+
+  document.getElementById('kpis').innerHTML = [
+    {num: total, lbl:'Total Hostels', cls:''},
+    {num: functional, lbl:'Functional', cls:'good'},
+    {num: nonFunctional, lbl:'Non Functional', cls:'bad'},
+    {num: yetToStart, lbl:'Yet to Start', cls:'warn'},
+    {num: totalBeds.toLocaleString(), lbl:'Total Beds (reported)', cls:''},
+    {num: states, lbl:'States / UTs Covered', cls:''},
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div></div>`).join('');
+
+  const stateCounts = {}; DATA.forEach(d=>{ stateCounts[d.state] = (stateCounts[d.state]||0)+1; });
+  barChart('stateChart', Object.entries(stateCounts).sort((a,b)=>b[1]-a[1]).slice(0,15));
+  const statusCounts = {}; DATA.forEach(d=>{ statusCounts[d.status] = (statusCounts[d.status]||0)+1; });
+  barChart('statusChart', Object.entries(statusCounts));
+  const catCounts = {}; DATA.forEach(d=>{ catCounts[d.category] = (catCounts[d.category]||0)+1; });
+  barChart('catChart', Object.entries(catCounts));
+
+  // OCCUPANCY
+  const occAvgByYear=[0,0,0,0,0], occCountByYear=[0,0,0,0,0];
+  DATA.forEach(d=>{ chronological(d.occupancy).forEach((v,i)=>{ if(typeof v==='number'){ occAvgByYear[i]+=v; occCountByYear[i]++; } }); });
+  const occAvg = occAvgByYear.map((s,i)=> occCountByYear[i]? +(s/occCountByYear[i]).toFixed(1) : null);
+  drawLineChart('occLineAll', [occAvg], ['#1d5cff'], 100);
+
+  const occSelect = document.getElementById('occHostelSelect');
+  occSelect.innerHTML = '';
+  DATA.filter(d=> (d.occupancy||[]).some(v=>typeof v==='number')).forEach(d=>{
+    const o = document.createElement('option');
+    o.value = d.name || `${d.state} - ${d.district}`;
+    o.textContent = `${d.name || d.district} (${d.state})`;
+    occSelect.appendChild(o);
+  });
+  function renderOneOcc(){
+    const d = DATA.find(h => (h.name || `${h.state} - ${h.district}`) === occSelect.value) || DATA.find(d=>(d.occupancy||[]).some(v=>typeof v==='number'));
+    if(!d) return;
+    drawLineChart('occLineOne', [chronological(d.occupancy)], ['#7c4dff'], 100);
+  }
+  occSelect.onchange = renderOneOcc;
+  if(occSelect.options.length) renderOneOcc();
+
+  // FINANCE
+  const revByYear=[0,0,0,0,0], expByYear=[0,0,0,0,0];
+  DATA.forEach(d=>{
+    chronological(d.revenue).forEach((v,i)=>{ if(typeof v==='number') revByYear[i]+=v; });
+    chronological(d.expenditure).forEach((v,i)=>{ if(typeof v==='number') expByYear[i]+=v; });
+  });
+  const totalRevAll = revByYear.reduce((a,b)=>a+b,0);
+  const totalExpAll = expByYear.reduce((a,b)=>a+b,0);
+  document.getElementById('finKpis').innerHTML = [
+    {num: fmtCr(totalRevAll), lbl:'Total Revenue (5 yrs)', cls:'good'},
+    {num: fmtCr(totalExpAll), lbl:'Total Expenditure (5 yrs)', cls:'bad'},
+    {num: fmtCr(totalRevAll-totalExpAll), lbl:'Net (5 yrs)', cls: (totalRevAll-totalExpAll)>=0?'good':'bad'},
+    {num: DATA.filter(d=>(d.revenue||[]).some(v=>typeof v==='number')).length, lbl:'Hostels w/ Financial Data', cls:''},
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div></div>`).join('');
+  drawLineChart('finChart', [revByYear, expByYear], ['#1d5cff','#d64545']);
+
+  const expTop = DATA.map(d=>{
+    const chron = chronological(d.expenditure);
+    const latest = [...chron].reverse().find(v=>typeof v==='number');
+    return [d.name || `${d.state}-${d.district}`, latest||0];
+  }).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  barChart('expChart', expTop.map(([n,v])=>[n, Math.round(v)]));
+
+  // STAFF
+  let sancTotal=0, empTotal=0;
+  DATA.forEach(d=>{ sancTotal += (typeof d.sanctioned_staff==='number'?d.sanctioned_staff:0); empTotal += (typeof d.employed_staff==='number'?d.employed_staff:0); });
+  document.getElementById('staffKpis').innerHTML = [
+    {num: sancTotal, lbl:'Sanctioned Staff (Total)', cls:''},
+    {num: empTotal, lbl:'Employed Staff (Total)', cls: empTotal<sancTotal?'warn':'good'},
+    {num: sancTotal-empTotal, lbl:'Vacancies', cls: (sancTotal-empTotal)>0?'bad':'good'},
+    {num: WARDENS.length, lbl:'Wardens/Managers on Record', cls:''},
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div></div>`).join('');
+  barChart('staffBar', [['Sanctioned', sancTotal], ['Employed', empTotal]]);
+
+  const wStatusCounts = {};
+  WARDENS.forEach(w=>{ const s=w.status||'Unknown'; wStatusCounts[s]=(wStatusCounts[s]||0)+1; });
+  barChart('wardenStatusChart', Object.entries(wStatusCounts));
+
+  document.getElementById('wardenCount').textContent = WARDENS.length;
+  document.querySelector('#wardenTbl tbody').innerHTML = WARDENS.map((w,i)=>
+    `<tr><td>${i+1}</td><td>${w.state||''}</td><td>${w.district||''}</td><td>${w.name||''}</td><td>${w.expiry||'—'}</td><td><span class="pill ${cls(w.status)}">${w.status||'—'}</span></td></tr>`
+  ).join('');
+
+  // LAND / DISPUTES
+  const disputeRows = DATA.filter(d => (d.dispute||'').trim().toLowerCase()==='yes' || (d.encroachment||'').trim().toLowerCase()==='yes');
+  document.getElementById('landKpis').innerHTML = [
+    {num: DATA.filter(d=>(d.dispute||'').trim().toLowerCase()==='yes').length, lbl:'Hostels with Disputes', cls:'bad'},
+    {num: DATA.filter(d=>(d.encroachment||'').trim().toLowerCase()==='yes').length, lbl:'Encroachment Reported', cls:'bad'},
+    {num: DATA.filter(d=>d.total_land).length, lbl:'Hostels w/ Land Data on Record', cls:''},
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div></div>`).join('');
+  document.getElementById('disputeCount').textContent = disputeRows.length;
+  document.querySelector('#disputeTbl tbody').innerHTML = disputeRows.map((d,i)=>
+    `<tr><td>${i+1}</td><td>${d.state}</td><td>${d.district}</td><td>${d.name||'—'}</td><td><span class="pill ${cls(d.dispute)}">${d.dispute||'—'}</span></td><td><span class="pill ${cls(d.encroachment)}">${d.encroachment||'—'}</span></td><td>${d.dispute_details||'—'}</td></tr>`
+  ).join('') || '<tr><td colspan="7" style="color:var(--muted)">No disputes/encroachments on record.</td></tr>';
+  document.querySelector('#landTbl tbody').innerHTML = DATA.map((d,i)=>
+    `<tr><td>${i+1}</td><td>${d.state}</td><td>${d.district}</td><td>${d.name||'—'}</td><td>${d.total_land||'—'}</td><td>${d.built_up||'—'}</td><td>${d.open_area||'—'}</td></tr>`
+  ).join('');
+
+  // MAP
+  const geo = DATA.filter(d=>d.latlong);
+  document.getElementById('mapCount').textContent = geo.length + ' / ' + DATA.length;
+  const LAT_MIN=6, LAT_MAX=36, LON_MIN=68, LON_MAX=98;
+  const svgW=700, svgH=460;
+  let scatter = '';
+  geo.forEach(d=>{
+    const [lat, lon] = d.latlong;
+    if(lat<LAT_MIN-2||lat>LAT_MAX+2||lon<LON_MIN-2||lon>LON_MAX+2) return;
+    const x = ((lon-LON_MIN)/(LON_MAX-LON_MIN))*svgW;
+    const y = svgH - ((lat-LAT_MIN)/(LAT_MAX-LAT_MIN))*svgH;
+    const color = d.status==='Functional' ? '#1a9e6d' : (d.status==='Non Functional' ? '#d64545' : '#e0a021');
+    const link = d.maplink && d.maplink.startsWith('http') ? d.maplink : `https://www.google.com/maps?q=${lat},${lon}`;
+    scatter += `<a href="${link}" target="_blank"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${color}" stroke="#fff" stroke-width="1"><title>${(d.name||d.district)} — ${d.state}</title></circle></a>`;
+  });
+  document.getElementById('indiaScatter').innerHTML = scatter + `<text x="10" y="20" font-size="11" fill="var(--muted)">Schematic scatter (lat/long) — not a geographic basemap. Click a dot to open in Google Maps.</text>`;
+  document.querySelector('#mapTbl tbody').innerHTML = geo.map((d,i)=>{
+    const [lat,lon]=d.latlong;
+    const link = d.maplink && d.maplink.startsWith('http') ? d.maplink : `https://www.google.com/maps?q=${lat},${lon}`;
+    return `<tr><td>${i+1}</td><td>${d.state}</td><td>${d.district}</td><td>${d.name||'—'}</td><td>${lat.toFixed(4)}, ${lon.toFixed(4)}</td><td><a class="maplink" href="${link}" target="_blank">Open ↗</a></td></tr>`;
+  }).join('');
+
+  // RESOURCE CENTRE
+  const rhYes = DATA.filter(d => (d.yrh_facility||'').trim().toLowerCase()==='yes');
+  document.getElementById('resourceKpis').innerHTML = [
+    {num: rhYes.length, lbl:'Feasible for YR Hub Conversion', cls:'good'},
+    {num: DATA.length - rhYes.length, lbl:'Not Assessed / Not Feasible', cls:''},
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div></div>`).join('');
+  document.querySelector('#resourceTbl tbody').innerHTML = DATA.map((d,i)=>
+    `<tr><td>${i+1}</td><td>${d.state}</td><td>${d.district}</td><td>${d.name||'—'}</td><td><span class="pill ${cls(d.yrh_facility)}">${d.yrh_facility||'—'}</span></td><td>${d.yrh_plan||'—'}</td></tr>`
+  ).join('');
+
+  // FULL REGISTRY
+  const statusSel = document.getElementById('statusFilter');
+  statusSel.innerHTML = '<option value="">All statuses</option>';
+  [...new Set(DATA.map(d=>d.status))].sort().forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; statusSel.appendChild(o); });
+  const stateSel = document.getElementById('stateFilter');
+  stateSel.innerHTML = '<option value="">All states</option>';
+  [...new Set(DATA.map(d=>d.state))].sort().forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; stateSel.appendChild(o); });
+
+  function renderTable(){
+    const q = document.getElementById('search').value.toLowerCase();
+    const st = statusSel.value, stt = stateSel.value;
+    const rows = DATA.filter(d=>{
+      if(st && d.status!==st) return false;
+      if(stt && d.state!==stt) return false;
+      if(q && !`${d.state} ${d.district} ${d.name||''}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    document.querySelector('#tbl tbody').innerHTML = rows.map((d,i)=>
+      `<tr><td>${i+1}</td><td>${d.state}</td><td>${d.district}</td><td>${d.name||'<span style="color:var(--muted)">—</span>'}</td><td>${d.category}</td><td><span class="pill ${cls(d.status)}">${d.status}</span></td><td>${typeof d.beds==='number'? d.beds : (d.beds||'—')}</td></tr>`
+    ).join('');
+  }
+  document.getElementById('search').oninput = renderTable;
+  statusSel.onchange = renderTable;
+  stateSel.onchange = renderTable;
+  renderTable();
+}
+
+loadAll();
+</script>
+</body>
+</html>
