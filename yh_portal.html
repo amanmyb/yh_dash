@@ -6,6 +6,8 @@
 <title>Youth Hostel Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root{
     --bg:#f4f6f8; --card:#ffffff; --ink:#1c2530; --muted:#67717d;
@@ -40,6 +42,10 @@
   nav.tabs button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  @media (max-width:800px){.grid{grid-template-columns:1fr;}}
+  .chart-box{position:relative;height:230px;}
+  #hostelMap{height:460px;border-radius:8px;}
   .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
   .kpi .num{font-size:24px;font-weight:700;} .kpi .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
   .kpi.good .num{color:var(--good);} .kpi.bad .num{color:var(--bad);} .kpi.warn .num{color:var(--warn);}
@@ -111,6 +117,7 @@
   <nav class="tabs" id="tabs">
     <button data-tab="overview" class="active">Overview</button>
     <button data-tab="registry">Hostel Registry</button>
+    <button data-tab="map">Map</button>
     <button data-tab="uploads">File Uploads</button>
     <button data-tab="approvals" id="approvalsTabBtn" style="display:none;">Approvals</button>
   </nav>
@@ -122,16 +129,26 @@
     </div>
     <div class="kpis" id="kpis"></div>
     <div class="grid">
-      <div class="card"><h2>Status Breakdown</h2><canvas id="statusPie" height="220"></canvas></div>
-      <div class="card"><h2>Category Split</h2><canvas id="categoryPie" height="220"></canvas></div>
+      <div class="card"><h2>Status Breakdown</h2><div class="chart-box"><canvas id="statusPie"></canvas></div></div>
+      <div class="card"><h2>Category Split</h2><div class="chart-box"><canvas id="categoryPie"></canvas></div></div>
+      <div class="card"><h2>Top 5 States by Total Beds</h2><div class="chart-box"><canvas id="topBedsBar"></canvas></div></div>
+      <div class="card"><h2>Overall Occupancy</h2><div class="chart-box"><canvas id="occGauge"></canvas></div></div>
     </div>
-    <div class="grid">
-      <div class="card"><h2>Top 5 States by Total Beds</h2><canvas id="topBedsBar" height="220"></canvas></div>
-      <div class="card"><h2>Overall Occupancy</h2><canvas id="occGauge" height="220"></canvas></div>
+    <div class="card">
+      <h2>Revenue vs Expenditure — Financial Year Wise</h2>
+      <div class="chart-box" style="height:280px;"><canvas id="finLine"></canvas></div>
     </div>
     <div class="card">
       <h2>Scope</h2>
       <p style="font-size:13px;color:var(--muted);margin:0;" id="scopeText"></p>
+    </div>
+  </section>
+
+  <section class="section" id="map">
+    <div class="card">
+      <h2>Hostels by District — Map View</h2>
+      <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px;">Marker size reflects number of hostels in that district. Click a marker for details.</p>
+      <div id="hostelMap"></div>
     </div>
   </section>
 
@@ -267,6 +284,7 @@ let CURRENT_PROFILE = null;
 let HOSTELS = [];
 let UPLOADS = [];
 let OCC_LATEST = []; // [{hostel_id, occupancy_pct}] — latest year per hostel
+let FIN_ROWS = [];   // [{hostel_id, year, revenue, expenditure}]
 
 async function loadOccupancy(){
   // Pull all occupancy rows, then keep only the most recent year per hostel
@@ -279,6 +297,12 @@ async function loadOccupancy(){
     seen.add(row.hostel_id);
     OCC_LATEST.push(row);
   });
+}
+
+async function loadFinancials(){
+  const { data, error } = await sb.from('financials').select('hostel_id, year, revenue, expenditure');
+  if(error){ console.error(error); FIN_ROWS = []; return; }
+  FIN_ROWS = data || [];
 }
 
 function cls(s){ return (s||'').replace(/[\s?]/g,''); }
@@ -325,6 +349,7 @@ async function onLoggedIn(user){
     document.getElementById('addHostelBtn').style.display = 'inline-block';
   }
   await loadOccupancy();
+  await loadFinancials();
   await loadHostels();
   await loadUploads();
 }
@@ -335,6 +360,7 @@ sb.auth.getSession().then(({data})=>{
 });
 
 // ---------- TABS ----------
+let MAP_INSTANCE = null;
 document.querySelectorAll('#tabs button').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('active'));
@@ -342,8 +368,55 @@ document.querySelectorAll('#tabs button').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab === 'approvals') loadApprovals();
+    if(btn.dataset.tab === 'map') setTimeout(renderMap, 50); // let the container become visible first
   });
 });
+
+function renderMap(){
+  const scope = scopedHostels();
+  const geo = scope.filter(h => h.latitude != null && h.longitude != null);
+
+  if(!MAP_INSTANCE){
+    MAP_INSTANCE = L.map('hostelMap').setView([22.9, 79.0], 5); // roughly centered on India
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 18
+    }).addTo(MAP_INSTANCE);
+    MAP_INSTANCE._markerLayer = L.layerGroup().addTo(MAP_INSTANCE);
+  } else {
+    MAP_INSTANCE._markerLayer.clearLayers();
+    MAP_INSTANCE.invalidateSize();
+  }
+
+  // group by district, average coordinates, count hostels
+  const byDistrict = {};
+  geo.forEach(h=>{
+    const k = `${h.state}|${h.district}`;
+    if(!byDistrict[k]) byDistrict[k] = { state: h.state, district: h.district, lats: [], lons: [], count: 0, functional: 0 };
+    byDistrict[k].lats.push(h.latitude);
+    byDistrict[k].lons.push(h.longitude);
+    byDistrict[k].count += 1;
+    if(h.status === 'Functional') byDistrict[k].functional += 1;
+  });
+
+  Object.values(byDistrict).forEach(d=>{
+    const lat = d.lats.reduce((a,b)=>a+b,0)/d.lats.length;
+    const lon = d.lons.reduce((a,b)=>a+b,0)/d.lons.length;
+    const radius = 8 + Math.min(d.count, 10) * 3; // bigger marker for more hostels, capped
+    const marker = L.circleMarker([lat, lon], {
+      radius, color: '#1d5cff', fillColor: '#1d5cff', fillOpacity: 0.55, weight: 2
+    }).bindPopup(`<b>${d.district}, ${d.state}</b><br>${d.count} hostel${d.count>1?'s':''} · ${d.functional} functional`);
+    marker.addTo(MAP_INSTANCE._markerLayer);
+  });
+
+  if(!Object.keys(byDistrict).length){
+    document.getElementById('hostelMap').insertAdjacentHTML('afterend',
+      '<p id="mapEmptyMsg" style="color:var(--muted);font-size:13px;margin-top:8px;">No hostels with coordinates in the current scope.</p>');
+  } else {
+    const existing = document.getElementById('mapEmptyMsg');
+    if(existing) existing.remove();
+  }
+}
 
 function canEdit(h){
   if(!CURRENT_PROFILE) return false;
@@ -412,7 +485,7 @@ function renderKpis(){
       labels: ['Functional','Non Functional','Yet to Start'],
       datasets: [{ data: [functional, nonFunctional, yetToStart], backgroundColor: ['#1a9e6d','#d64545','#e0a021'] }]
     },
-    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
+    options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
   });
 
   // Category pie
@@ -424,7 +497,7 @@ function renderKpis(){
       labels: Object.keys(catCounts),
       datasets: [{ data: Object.values(catCounts), backgroundColor: CHART_COLORS }]
     },
-    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
+    options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
   });
 
   // Top 5 states by total beds (always computed from ALL data admin/state/district can see —
@@ -438,12 +511,15 @@ function renderKpis(){
       labels: top5.map(t=>t[0]),
       datasets: [{ label: 'Total Beds', data: top5.map(t=>t[1]), backgroundColor: '#1d5cff', borderRadius: 6 }]
     },
-    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
   });
 
   // Overall occupancy gauge (donut styled as a gauge, with center label)
   const avgOcc = OCCUPANCY_AVG_BY_HOSTEL_SIZE();
   drawGauge('occGauge', avgOcc);
+
+  // Revenue vs expenditure, FY-wise
+  renderFinLine();
 }
 
 // Averages latest-year occupancy across the current scope, using the OCC_MAP loaded separately
@@ -453,6 +529,31 @@ function OCCUPANCY_AVG_BY_HOSTEL_SIZE(){
   const vals = OCC_LATEST.filter(o => ids.has(o.hostel_id)).map(o=>o.occupancy_pct).filter(v=>typeof v==='number');
   if(!vals.length) return null;
   return +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+}
+
+// Revenue vs Expenditure, FY-wise, summed across current scope
+function renderFinLine(){
+  const scope = scopedHostels();
+  const ids = new Set(scope.map(h=>h.id));
+  const rows = FIN_ROWS.filter(r => ids.has(r.hostel_id));
+  const years = [...new Set(rows.map(r=>r.year))].sort(); // e.g. '2022-21'..'2026-25' sorts correctly as text
+  const revByYear = years.map(y => rows.filter(r=>r.year===y).reduce((s,r)=> s + (r.revenue||0), 0));
+  const expByYear = years.map(y => rows.filter(r=>r.year===y).reduce((s,r)=> s + (r.expenditure||0), 0));
+  upsertChart('finLine', {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: [
+        { label: 'Revenue', data: revByYear, borderColor: '#1d5cff', backgroundColor: 'rgba(29,92,255,0.1)', tension: 0.3, fill: true },
+        { label: 'Expenditure', data: expByYear, borderColor: '#d64545', backgroundColor: 'rgba(214,69,69,0.1)', tension: 0.3, fill: true }
+      ]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => '₹' + (v/100000).toFixed(0)+'L' } } }
+    }
+  });
 }
 
 function drawGauge(canvasId, pct){
@@ -465,6 +566,7 @@ function drawGauge(canvasId, pct){
       datasets: [{ data: [val, 100-val], backgroundColor: ['#1d5cff', 'rgba(128,128,128,0.15)'], borderWidth: 0 }]
     },
     options: {
+      maintainAspectRatio: false,
       circumference: 180, rotation: 270, cutout: '75%',
       plugins: {
         legend: { display: false },
