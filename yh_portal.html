@@ -1123,10 +1123,10 @@ document.getElementById('uploadBtn').addEventListener('click', async ()=>{
   const fileInput = document.getElementById('uploadFile');
   const file = fileInput.files[0];
   if(!hostelId || !file){ msg.style.color='var(--bad)'; msg.textContent = 'Choose a hostel and a file first.'; return; }
-  const MAX_SIZE = 45 * 1024 * 1024; // 45MB safety margin under Supabase's 50MB free-tier cap
+  const MAX_SIZE = 500 * 1024; // 45MB safety margin under Supabase's 50MB free-tier cap
   if(file.size > MAX_SIZE){
     msg.style.color='var(--bad)';
-    msg.textContent = `⚠ File is ${(file.size/1024/1024).toFixed(1)} MB — max allowed is 45 MB. Please compress it or split it up.`;
+    msg.textContent = `⚠ File is ${(file.size/1024/1024).toFixed(1)} MB — max allowed is 500 KB. Please compress it or split it up.`;
     return;
   }
   btn.disabled = true;
