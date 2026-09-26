@@ -211,7 +211,7 @@
   </section>
 
   <footer>
-    Live · Backed by Supabase · Role-based access enforced server-side (Row Level Security)
+    Live · Role-based access enforced
     <div id="footerClock" style="margin-top:4px;"></div>
   </footer>
 </div>
@@ -731,7 +731,7 @@ document.getElementById('uploadBtn').addEventListener('click', async ()=>{
   const fileInput = document.getElementById('uploadFile');
   const file = fileInput.files[0];
   if(!hostelId || !file){ msg.style.color='var(--bad)'; msg.textContent = 'Choose a hostel and a file first.'; return; }
-  const MAX_SIZE = 45 * 1024 * 1024; // 45MB safety margin under Supabase's 50MB free-tier cap
+  const MAX_SIZE = 200 * 1024; // 45MB safety margin under Supabase's 50MB free-tier cap
   if(file.size > MAX_SIZE){
     msg.style.color='var(--bad)';
     msg.textContent = `⚠ File is ${(file.size/1024/1024).toFixed(1)} MB — max allowed is 45 MB. Please compress it or split it up.`;
@@ -749,7 +749,7 @@ document.getElementById('uploadBtn').addEventListener('click', async ()=>{
   });
   if(thisRequest !== uploadRequestId){ return; }
   if(dbErr){ msg.style.color='var(--bad)'; msg.textContent = '⚠ ' + dbErr.message; btn.disabled = false; return; }
-  msg.style.color='var(--good)'; msg.textContent = '✓ Uploaded — pending admin approval.';
+  msg.style.color='var(--good)'; msg.textContent = '✓ Uploaded - pending admin approval.';
   fileInput.value = '';
   btn.disabled = false;
   await loadUploads();
