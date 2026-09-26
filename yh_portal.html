@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Youth Hostel Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1c2530; --muted:#67717d;
+    --accent:#1d5cff; --good:#1a9e6d; --bad:#d64545; --warn:#e0a021; --border:#e4e8ed;
+    padding-top: env(safe-area-inset-top,0px); padding-bottom: env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#12161c; --card:#1a2029; --ink:#eef1f5; --muted:#9aa4b2; --border:#2a323d; } }
+  :root[data-theme="dark"]{ --bg:#12161c; --card:#1a2029; --ink:#eef1f5; --muted:#9aa4b2; --border:#2a323d; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
+  header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+  header h1{font-size:20px;margin:0;}
+  .who{font-size:12px;color:var(--muted);text-align:right;}
+  button{cursor:pointer;font-family:inherit;}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;}
+  .btn.secondary{background:var(--card);color:var(--ink);border:1px solid var(--border);}
+  .btn.small{padding:5px 10px;font-size:12px;}
+  .btn:disabled{opacity:0.5;cursor:default;}
+  input,select,textarea{background:var(--card);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;width:100%;}
+  label{font-size:12px;color:var(--muted);display:block;margin:10px 0 4px;}
+
+  /* LOGIN */
+  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;max-width:360px;width:100%;}
+  .login-card h1{font-size:20px;margin:0 0 4px;}
+  .login-card p{color:var(--muted);font-size:13px;margin:0 0 18px;}
+  #loginError{color:var(--bad);font-size:12.5px;margin-top:8px;min-height:16px;}
+
+  nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:5;border-bottom:1px solid var(--border);}
+  nav.tabs button{background:var(--card);color:var(--ink);border:1px solid var(--border);border-radius:999px;padding:7px 14px;font-size:12.5px;}
+  nav.tabs button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  @media (max-width:800px){.grid{grid-template-columns:1fr;}}
+  .chart-box{position:relative;height:230px;}
+  #hostelMap{height:460px;border-radius:8px;}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+  .kpi .num{font-size:24px;font-weight:700;} .kpi .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+  .kpi.good .num{color:var(--good);} .kpi.bad .num{color:var(--bad);} .kpi.warn .num{color:var(--warn);}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;overflow:auto;}
+  .card h2{font-size:15px;margin:0 0 12px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--card);}
+  .tbl-wrap{max-height:460px;overflow:auto;border:1px solid var(--border);border-radius:8px;}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+  .pill.Functional{background:rgba(26,158,109,0.15);color:var(--good);}
+  .pill.NonFunctional{background:rgba(214,69,69,0.15);color:var(--bad);}
+  .pill.YettoStart{background:rgba(224,160,33,0.15);color:var(--warn);}
+  .pill.pending{background:rgba(224,160,33,0.15);color:var(--warn);}
+  .pill.approved{background:rgba(26,158,109,0.15);color:var(--good);}
+  .pill.rejected{background:rgba(214,69,69,0.15);color:var(--bad);}
+
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .controls input,.controls select{width:auto;min-width:150px;}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:50;padding:16px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--card);border-radius:14px;padding:22px;max-width:480px;width:100%;max-height:88vh;overflow:auto;}
+  .modal h2{margin:0 0 4px;font-size:17px;}
+  .modal .sub{color:var(--muted);font-size:12.5px;margin-bottom:14px;}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  #saveMsg{font-size:12px;margin-top:8px;min-height:16px;}
+  #saveMsg.ok{color:var(--good);} #saveMsg.err{color:var(--bad);}
+
+  .section{display:none;} .section.active{display:block;}
+  .edit-link{color:var(--accent);font-size:12px;font-weight:600;background:none;border:none;padding:0;}
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:30px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>🏨 Youth Hostel Portal</h1>
+    <p>MY Bharat — sign in to view and manage hostel data</p>
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="you@example.gov.in">
+    <label>Password</label>
+    <input type="password" id="loginPassword" placeholder="••••••••">
+    <button class="btn" style="width:100%;margin-top:16px;" id="loginBtn">Sign In</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="wrap" id="mainWrap" style="display:none;">
+  <header>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <img id="logoImg" src="logo.png" alt="MY Bharat" style="height:40px;width:auto;display:none;" onload="this.style.display='block'" onerror="this.style.display='none'">
+      <h1>🏨 Youth Hostel Dashboard</h1>
+    </div>
+    <div class="who">
+      <div id="whoName"></div>
+      <div id="whoRole" style="color:var(--muted)"></div>
+      <button class="btn secondary small" id="logoutBtn" style="margin-top:6px;">Log out</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="overview" class="active">Overview</button>
+    <button data-tab="registry">Hostel Registry</button>
+    <button data-tab="map">Map</button>
+    <button data-tab="uploads">File Uploads</button>
+    <button data-tab="approvals" id="approvalsTabBtn" style="display:none;">Approvals</button>
+  </nav>
+
+  <section class="section active" id="overview">
+    <div class="controls" id="overviewFilters" style="display:none;">
+      <select id="ovStateFilter"><option value="">All States</option></select>
+      <select id="ovDistrictFilter"><option value="">All Districts</option></select>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="grid">
+      <div class="card"><h2>Status Breakdown</h2><div class="chart-box"><canvas id="statusPie"></canvas></div></div>
+      <div class="card"><h2>Category Split</h2><div class="chart-box"><canvas id="categoryPie"></canvas></div></div>
+      <div class="card"><h2>Top 5 States by Total Beds</h2><div class="chart-box"><canvas id="topBedsBar"></canvas></div></div>
+      <div class="card"><h2>Overall Occupancy</h2><div class="chart-box"><canvas id="occGauge"></canvas></div></div>
+    </div>
+    <div class="card">
+      <h2>Revenue vs Expenditure — Financial Year Wise</h2>
+      <div class="chart-box" style="height:280px;"><canvas id="finLine"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Scope</h2>
+      <p style="font-size:13px;color:var(--muted);margin:0;" id="scopeText"></p>
+    </div>
+  </section>
+
+  <section class="section" id="map">
+    <div class="card">
+      <h2>Hostels by District — Map View</h2>
+      <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px;">Marker size reflects number of hostels in that district. Click a marker for details.</p>
+      <div id="hostelMap"></div>
+    </div>
+  </section>
+
+  <section class="section" id="registry">
+    <div class="card">
+      <h2>Hostel Registry</h2>
+      <div class="controls">
+        <input type="text" id="search" placeholder="Search state, district or hostel...">
+        <select id="statusFilter"><option value="">All statuses</option><option>Functional</option><option>Non Functional</option><option>Yet to Start</option></select>
+        <button class="btn small" id="addHostelBtn" style="display:none;margin-left:auto;">+ Add Hostel</button>
+      </div>
+      <div class="tbl-wrap">
+        <table id="tbl">
+          <thead><tr><th>State</th><th>District</th><th>Hostel</th><th>Status</th><th>Beds</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="uploads">
+    <div class="card">
+      <h2>Upload a File</h2>
+      <label>Hostel</label>
+      <select id="uploadHostelSelect"></select>
+      <label>Category</label>
+      <select id="uploadCategory">
+        <option>Renovation Proposal</option>
+        <option>Legal Document</option>
+        <option>Photo</option>
+        <option>Order</option>
+        <option>Other</option>
+      </select>
+      <label>File</label>
+      <input type="file" id="uploadFile">
+      <button class="btn" id="uploadBtn" style="margin-top:14px;">Upload</button>
+      <div id="uploadMsg" style="font-size:12px;margin-top:8px;"></div>
+    </div>
+    <div class="card">
+      <h2>Uploaded Files</h2>
+      <div class="tbl-wrap">
+        <table id="uploadsTbl">
+          <thead><tr><th>Hostel</th><th>Category</th><th>File</th><th>Status</th><th>Uploaded</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="approvals">
+    <div class="card">
+      <h2>Pending File Approvals</h2>
+      <div class="tbl-wrap">
+        <table id="approvalsTbl">
+          <thead><tr><th>Hostel</th><th>Category</th><th>File</th><th>Uploaded</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Live · Backed by Supabase · Role-based access enforced server-side (Row Level Security)
+    <div id="footerClock" style="margin-top:4px;"></div>
+  </footer>
+</div>
+
+<!-- ADD HOSTEL MODAL -->
+<div class="modal-overlay" id="addOverlay">
+  <div class="modal">
+    <h2>Add New Hostel</h2>
+    <div class="sub">Admin only — creates a new hostel record.</div>
+    <div class="row2">
+      <div><label>State</label><input type="text" id="addState"></div>
+      <div><label>District</label><input type="text" id="addDistrict"></div>
+    </div>
+    <label>Hostel Name</label><input type="text" id="addName">
+    <div class="row2">
+      <div><label>Category</label><input type="text" id="addCategory" placeholder="e.g. Regular"></div>
+      <div><label>Status</label>
+        <select id="addStatus"><option>Functional</option><option>Non Functional</option><option>Yet to Start</option></select>
+      </div>
+    </div>
+    <div class="row2">
+      <div><label>Beds</label><input type="number" id="addBeds"></div>
+      <div><label>Manager Name</label><input type="text" id="addManager"></div>
+    </div>
+    <label>Warden Name</label><input type="text" id="addWarden">
+    <div id="addMsg" style="font-size:12px;margin-top:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="cancelAdd">Cancel</button>
+      <button class="btn" id="saveAdd">Create Hostel</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editOverlay">
+  <div class="modal">
+    <h2>Edit Hostel</h2>
+    <div class="sub" id="editSub"></div>
+    <label>Status</label>
+    <select id="editStatus"><option>Functional</option><option>Non Functional</option><option>Yet to Start</option></select>
+    <div class="row2">
+      <div><label>Beds</label><input type="number" id="editBeds"></div>
+      <div><label>Renovation Status</label><input type="text" id="editRenovation"></div>
+    </div>
+    <label>Manager Name</label><input type="text" id="editManager">
+    <label>Warden Name</label><input type="text" id="editWarden">
+    <div class="row2">
+      <div><label>Phone</label><input type="text" id="editPhone"></div>
+      <div><label>Mobile</label><input type="text" id="editMobile"></div>
+    </div>
+    <div id="saveMsg"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="cancelEdit">Cancel</button>
+      <button class="btn" id="saveEdit">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== CONFIG ======
+const SUPABASE_URL = "https://uakpcedbebejxtgyumfz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVha3BjZWRiZWJlanh0Z3l1bWZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNTA2NDcsImV4cCI6MjEwNTYyNjY0N30.onCNRADOv-Ehx2eqevEXarnQgd_YV5FpXTIRf1mngW4";
+const UPLOAD_BUCKET = "hostel-uploads";
+// =====================
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let CURRENT_USER = null;
+let CURRENT_PROFILE = null;
+let HOSTELS = [];
+let UPLOADS = [];
+let OCC_LATEST = []; // [{hostel_id, occupancy_pct}] — latest year per hostel
+let FIN_ROWS = [];   // [{hostel_id, year, revenue, expenditure}]
+
+async function loadOccupancy(){
+  // Pull all occupancy rows, then keep only the most recent year per hostel
+  const { data, error } = await sb.from('occupancy').select('hostel_id, year, occupancy_pct').order('year', {ascending:false});
+  if(error){ console.error(error); OCC_LATEST = []; return; }
+  const seen = new Set();
+  OCC_LATEST = [];
+  (data||[]).forEach(row=>{
+    if(seen.has(row.hostel_id)) return; // already have this hostel's most recent year
+    seen.add(row.hostel_id);
+    OCC_LATEST.push(row);
+  });
+}
+
+async function loadFinancials(){
+  const { data, error } = await sb.from('financials').select('hostel_id, year, revenue, expenditure');
+  if(error){ console.error(error); FIN_ROWS = []; return; }
+  FIN_ROWS = data || [];
+}
+
+function cls(s){ return (s||'').replace(/[\s?]/g,''); }
+function esc(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ---------- AUTH ----------
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if(!email || !password){ errEl.textContent = 'Enter email and password.'; return; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ errEl.textContent = error.message; return; }
+  await onLoggedIn(data.user);
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  await sb.auth.signOut();
+  location.reload();
+});
+
+async function onLoggedIn(user){
+  CURRENT_USER = user;
+  const { data: profile, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  if(error || !profile){
+    document.getElementById('loginError').textContent = 'No profile found for this account. Ask an admin to add you to the profiles table.';
+    await sb.auth.signOut();
+    return;
+  }
+  CURRENT_PROFILE = profile;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainWrap').style.display = 'block';
+  document.getElementById('whoName').textContent = profile.full_name || user.email;
+  document.getElementById('whoRole').textContent = profile.role === 'admin' ? 'Ministry Admin'
+    : profile.role === 'state' ? `State Officer — ${profile.state}`
+    : `District Officer — ${profile.district}, ${profile.state}`;
+  document.getElementById('scopeText').textContent = profile.role === 'admin'
+    ? 'Overview shows all hostels by default. Use the dropdowns above to filter to a state/district. Registry shows every hostel; you can edit any of them.'
+    : profile.role === 'state'
+    ? `Overview is scoped to ${profile.state} only. Registry still lists every hostel nationwide for reference, but you can only edit hostels within ${profile.state}.`
+    : `Overview is scoped to ${profile.district}, ${profile.state} only. Registry still lists every hostel nationwide for reference, but you can only edit your own hostel's details.`;
+  document.getElementById('addHostelBtn').style.display = 'inline-block';
+  if(profile.role === 'admin'){
+    document.getElementById('approvalsTabBtn').style.display = 'inline-block';
+  }
+  await loadOccupancy();
+  await loadFinancials();
+  await loadHostels();
+  await loadUploads();
+}
+
+// Restore session on reload
+sb.auth.getSession().then(({data})=>{
+  if(data.session){ onLoggedIn(data.session.user); }
+});
+
+// ---------- TABS ----------
+let MAP_INSTANCE = null;
+document.querySelectorAll('#tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'approvals') loadApprovals();
+    if(btn.dataset.tab === 'map') setTimeout(renderMap, 50); // let the container become visible first
+  });
+});
+
+function renderMap(){
+  const scope = scopedHostels();
+  const geo = scope.filter(h => h.latitude != null && h.longitude != null);
+
+  if(!MAP_INSTANCE){
+    MAP_INSTANCE = L.map('hostelMap').setView([22.9, 79.0], 5); // roughly centered on India
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 18
+    }).addTo(MAP_INSTANCE);
+    MAP_INSTANCE._markerLayer = L.layerGroup().addTo(MAP_INSTANCE);
+  } else {
+    MAP_INSTANCE._markerLayer.clearLayers();
+    MAP_INSTANCE.invalidateSize();
+  }
+
+  // group by district, average coordinates, count hostels
+  const byDistrict = {};
+  geo.forEach(h=>{
+    const k = `${h.state}|${h.district}`;
+    if(!byDistrict[k]) byDistrict[k] = { state: h.state, district: h.district, lats: [], lons: [], count: 0, functional: 0 };
+    byDistrict[k].lats.push(h.latitude);
+    byDistrict[k].lons.push(h.longitude);
+    byDistrict[k].count += 1;
+    if(h.status === 'Functional') byDistrict[k].functional += 1;
+  });
+
+  Object.values(byDistrict).forEach(d=>{
+    const lat = d.lats.reduce((a,b)=>a+b,0)/d.lats.length;
+    const lon = d.lons.reduce((a,b)=>a+b,0)/d.lons.length;
+    const radius = 8 + Math.min(d.count, 10) * 3; // bigger marker for more hostels, capped
+    const marker = L.circleMarker([lat, lon], {
+      radius, color: '#1d5cff', fillColor: '#1d5cff', fillOpacity: 0.55, weight: 2
+    }).bindPopup(`<b>${d.district}, ${d.state}</b><br>${d.count} hostel${d.count>1?'s':''} · ${d.functional} functional`);
+    marker.addTo(MAP_INSTANCE._markerLayer);
+  });
+
+  if(!Object.keys(byDistrict).length){
+    document.getElementById('hostelMap').insertAdjacentHTML('afterend',
+      '<p id="mapEmptyMsg" style="color:var(--muted);font-size:13px;margin-top:8px;">No hostels with coordinates in the current scope.</p>');
+  } else {
+    const existing = document.getElementById('mapEmptyMsg');
+    if(existing) existing.remove();
+  }
+}
+
+function canEdit(h){
+  if(!CURRENT_PROFILE) return false;
+  if(CURRENT_PROFILE.role === 'admin') return true;
+  if(CURRENT_PROFILE.role === 'state') return CURRENT_PROFILE.state === h.state;
+  if(CURRENT_PROFILE.role === 'district') return CURRENT_PROFILE.state === h.state && CURRENT_PROFILE.district === h.district;
+  return false;
+}
+
+// ---------- LOAD HOSTELS ----------
+async function loadHostels(){
+  const { data, error } = await sb.from('hostels').select('*').order('state');
+  if(error){ console.error(error); return; }
+  HOSTELS = data || [];
+  setupOverviewFilters();
+  renderKpis();
+  renderRegistry();
+  renderUploadHostelSelect();
+}
+
+function scopedHostels(){
+  // Base scope from the user's own role
+  let list = HOSTELS;
+  if(CURRENT_PROFILE.role === 'district'){
+    list = HOSTELS.filter(h => h.state === CURRENT_PROFILE.state && h.district === CURRENT_PROFILE.district);
+  } else if(CURRENT_PROFILE.role === 'state'){
+    list = HOSTELS.filter(h => h.state === CURRENT_PROFILE.state);
+  } else if(CURRENT_PROFILE.role === 'admin'){
+    // admin can further narrow via the dropdowns
+    const st = document.getElementById('ovStateFilter').value;
+    const di = document.getElementById('ovDistrictFilter').value;
+    if(st) list = list.filter(h => h.state === st);
+    if(di) list = list.filter(h => h.district === di);
+  }
+  return list;
+}
+
+let CHART_INSTANCES = {};
+function upsertChart(id, config){
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  if(CHART_INSTANCES[id]) CHART_INSTANCES[id].destroy();
+  CHART_INSTANCES[id] = new Chart(ctx, config);
+}
+
+const CHART_COLORS = ['#1d5cff','#7c4dff','#1a9e6d','#e0a021','#d64545','#00b8d9','#ff7a45','#8e44ad','#2ecc71','#e67e22'];
+
+function renderKpis(){
+  const scope = scopedHostels();
+  const total = scope.length;
+  const functional = scope.filter(h=>h.status==='Functional').length;
+  const nonFunctional = scope.filter(h=>h.status==='Non Functional').length;
+  const yetToStart = scope.filter(h=>h.status==='Yet to Start').length;
+  const beds = scope.reduce((s,h)=>s+(h.beds||0),0);
+  document.getElementById('kpis').innerHTML = [
+    {num: total, lbl:'Total Hostels', cls:''},
+    {num: functional, lbl:'Functional', cls:'good'},
+    {num: nonFunctional, lbl:'Non Functional', cls:'bad'},
+    {num: beds.toLocaleString(), lbl:'Total Beds', cls:''},
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div></div>`).join('');
+
+  // Status pie
+  upsertChart('statusPie', {
+    type: 'pie',
+    data: {
+      labels: ['Functional','Non Functional','Yet to Start'],
+      datasets: [{ data: [functional, nonFunctional, yetToStart], backgroundColor: ['#1a9e6d','#d64545','#e0a021'] }]
+    },
+    options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
+  });
+
+  // Category pie
+  const catCounts = {};
+  scope.forEach(h=>{ const c = h.category || 'Unspecified'; catCounts[c] = (catCounts[c]||0)+1; });
+  upsertChart('categoryPie', {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(catCounts),
+      datasets: [{ data: Object.values(catCounts), backgroundColor: CHART_COLORS }]
+    },
+    options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
+  });
+
+  // Top 5 states by total beds (always computed from ALL data admin/state/district can see —
+  // for district/state users this scope is already narrow, so the "top 5" naturally reflects what they can see)
+  const bedsByState = {};
+  scope.forEach(h=>{ bedsByState[h.state] = (bedsByState[h.state]||0) + (h.beds||0); });
+  const top5 = Object.entries(bedsByState).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  upsertChart('topBedsBar', {
+    type: 'bar',
+    data: {
+      labels: top5.map(t=>t[0]),
+      datasets: [{ label: 'Total Beds', data: top5.map(t=>t[1]), backgroundColor: '#1d5cff', borderRadius: 6 }]
+    },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  // Overall occupancy gauge (donut styled as a gauge, with center label)
+  const avgOcc = OCCUPANCY_AVG_BY_HOSTEL_SIZE();
+  drawGauge('occGauge', avgOcc);
+
+  // Revenue vs expenditure, FY-wise
+  renderFinLine();
+}
+
+// Averages latest-year occupancy across the current scope, using the OCC_MAP loaded separately
+function OCCUPANCY_AVG_BY_HOSTEL_SIZE(){
+  const scope = scopedHostels();
+  const ids = new Set(scope.map(h=>h.id));
+  const vals = OCC_LATEST.filter(o => ids.has(o.hostel_id)).map(o=>o.occupancy_pct).filter(v=>typeof v==='number');
+  if(!vals.length) return null;
+  return +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+}
+
+// Revenue vs Expenditure, FY-wise, summed across current scope
+function renderFinLine(){
+  const scope = scopedHostels();
+  const ids = new Set(scope.map(h=>h.id));
+  const rows = FIN_ROWS.filter(r => ids.has(r.hostel_id));
+  const years = [...new Set(rows.map(r=>r.year))].sort(); // e.g. '2022-21'..'2026-25' sorts correctly as text
+  const revByYear = years.map(y => rows.filter(r=>r.year===y).reduce((s,r)=> s + (r.revenue||0), 0));
+  const expByYear = years.map(y => rows.filter(r=>r.year===y).reduce((s,r)=> s + (r.expenditure||0), 0));
+  upsertChart('finLine', {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: [
+        { label: 'Revenue', data: revByYear, borderColor: '#1d5cff', backgroundColor: 'rgba(29,92,255,0.1)', tension: 0.3, fill: true },
+        { label: 'Expenditure', data: expByYear, borderColor: '#d64545', backgroundColor: 'rgba(214,69,69,0.1)', tension: 0.3, fill: true }
+      ]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => '₹' + (v/100000).toFixed(0)+'L' } } }
+    }
+  });
+}
+
+function drawGauge(canvasId, pct){
+  const val = pct==null ? 0 : Math.max(0, Math.min(100, pct));
+  const label = pct==null ? 'No data' : `${val}%`;
+  upsertChart(canvasId, {
+    type: 'doughnut',
+    data: {
+      labels: ['Occupied','Remaining'],
+      datasets: [{ data: [val, 100-val], backgroundColor: ['#1d5cff', 'rgba(128,128,128,0.15)'], borderWidth: 0 }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      circumference: 180, rotation: 270, cutout: '75%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: pct!=null }
+      }
+    },
+    plugins: [{
+      id: 'centerText',
+      afterDraw(chart){
+        const {ctx, chartArea} = chart;
+        ctx.save();
+        ctx.font = 'bold 22px -apple-system, sans-serif';
+        ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--ink') || '#1c2530';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, (chartArea.left+chartArea.right)/2, (chartArea.top+chartArea.bottom)/2 + 20);
+        ctx.font = '11px -apple-system, sans-serif';
+        ctx.fillStyle = '#67717d';
+        ctx.fillText('avg. latest-year occupancy', (chartArea.left+chartArea.right)/2, (chartArea.top+chartArea.bottom)/2 + 38);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+function setupOverviewFilters(){
+  if(CURRENT_PROFILE.role !== 'admin') return; // district/state users don't get the picker, scope is fixed
+  document.getElementById('overviewFilters').style.display = 'flex';
+  const stSel = document.getElementById('ovStateFilter');
+  const diSel = document.getElementById('ovDistrictFilter');
+  stSel.innerHTML = '<option value="">All States</option>' +
+    [...new Set(HOSTELS.map(h=>h.state))].sort().map(s=>`<option value="${s}">${s}</option>`).join('');
+  function refreshDistrictOptions(){
+    const st = stSel.value;
+    const districts = [...new Set(HOSTELS.filter(h=> !st || h.state===st).map(h=>h.district))].sort();
+    diSel.innerHTML = '<option value="">All Districts</option>' + districts.map(d=>`<option value="${d}">${d}</option>`).join('');
+  }
+  refreshDistrictOptions();
+  stSel.onchange = ()=>{ refreshDistrictOptions(); renderKpis(); };
+  diSel.onchange = renderKpis;
+}
+
+function renderRegistry(){
+  const q = (document.getElementById('search').value||'').toLowerCase();
+  const st = document.getElementById('statusFilter').value;
+  // District/state officers only ever see their own hostels here; admin sees everything.
+  const base = CURRENT_PROFILE.role === 'admin' ? HOSTELS : scopedHostels();
+  const rows = base.filter(h=>{
+    if(st && h.status!==st) return false;
+    if(q && !`${h.state} ${h.district} ${h.name||''}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  document.querySelector('#tbl tbody').innerHTML = rows.map(h=>
+    `<tr><td>${esc(h.state)}</td><td>${esc(h.district)}</td><td>${esc(h.name)||'—'}</td>
+     <td><span class="pill ${cls(h.status)}">${h.status||'—'}</span></td><td>${h.beds ?? '—'}</td>
+     <td>${canEdit(h) ? `<button class="edit-link" onclick="openEdit('${h.id}')">Edit</button>` : ''}</td></tr>`
+  ).join('') || '<tr><td colspan="6" style="color:var(--muted)">No hostels in your scope yet.</td></tr>';
+}
+document.getElementById('search').addEventListener('input', renderRegistry);
+document.getElementById('statusFilter').addEventListener('change', renderRegistry);
+
+// ---------- EDIT MODAL ----------
+let editingId = null;
+window.openEdit = function(id){
+  const h = HOSTELS.find(x=>x.id===id);
+  if(!h) return;
+  editingId = id;
+  document.getElementById('editSub').textContent = `${h.name || h.district} — ${h.state}`;
+  document.getElementById('editStatus').value = h.status || 'Functional';
+  document.getElementById('editBeds').value = h.beds ?? '';
+  document.getElementById('editRenovation').value = h.renovation_status || '';
+  document.getElementById('editManager').value = h.manager_name || '';
+  document.getElementById('editWarden').value = h.warden_name || '';
+  document.getElementById('editPhone').value = h.phone || '';
+  document.getElementById('editMobile').value = h.mobile || '';
+  document.getElementById('saveMsg').textContent = '';
+  document.getElementById('editOverlay').classList.add('open');
+};
+document.getElementById('cancelEdit').addEventListener('click', ()=> document.getElementById('editOverlay').classList.remove('open'));
+
+// ---------- ADD HOSTEL ----------
+document.getElementById('addHostelBtn').addEventListener('click', ()=>{
+  ['addState','addDistrict','addName','addCategory','addBeds','addManager','addWarden'].forEach(id=> document.getElementById(id).value='');
+  document.getElementById('addStatus').value = 'Functional';
+  document.getElementById('addMsg').textContent = '';
+
+  const stateInput = document.getElementById('addState');
+  const districtInput = document.getElementById('addDistrict');
+  if(CURRENT_PROFILE.role === 'district'){
+    stateInput.value = CURRENT_PROFILE.state; stateInput.disabled = true;
+    districtInput.value = CURRENT_PROFILE.district; districtInput.disabled = true;
+  } else if(CURRENT_PROFILE.role === 'state'){
+    stateInput.value = CURRENT_PROFILE.state; stateInput.disabled = true;
+    districtInput.disabled = false;
+  } else {
+    stateInput.disabled = false; districtInput.disabled = false;
+  }
+  document.getElementById('addOverlay').classList.add('open');
+});
+document.getElementById('cancelAdd').addEventListener('click', ()=> document.getElementById('addOverlay').classList.remove('open'));
+
+document.getElementById('saveAdd').addEventListener('click', async ()=>{
+  const msg = document.getElementById('addMsg');
+  const state = document.getElementById('addState').value.trim();
+  const district = document.getElementById('addDistrict').value.trim();
+  if(!state || !district){ msg.style.color='var(--bad)'; msg.textContent='State and District are required.'; return; }
+  msg.style.color='var(--muted)'; msg.textContent='Creating…';
+  const payload = {
+    state, district,
+    name: document.getElementById('addName').value.trim() || null,
+    category: document.getElementById('addCategory').value.trim() || null,
+    status: document.getElementById('addStatus').value,
+    beds: parseInt(document.getElementById('addBeds').value) || null,
+    manager_name: document.getElementById('addManager').value.trim() || null,
+    warden_name: document.getElementById('addWarden').value.trim() || null,
+    updated_by: CURRENT_USER.id,
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await sb.from('hostels').insert(payload);
+  if(error){ msg.style.color='var(--bad)'; msg.textContent = '⚠ ' + error.message; return; }
+  msg.style.color='var(--good)'; msg.textContent = '✓ Hostel created.';
+  await loadHostels();
+  setTimeout(()=> document.getElementById('addOverlay').classList.remove('open'), 700);
+});
+
+document.getElementById('saveEdit').addEventListener('click', async ()=>{
+  const msg = document.getElementById('saveMsg');
+  msg.className = ''; msg.textContent = 'Saving…';
+  const updates = {
+    status: document.getElementById('editStatus').value,
+    beds: parseInt(document.getElementById('editBeds').value) || null,
+    renovation_status: document.getElementById('editRenovation').value,
+    manager_name: document.getElementById('editManager').value,
+    warden_name: document.getElementById('editWarden').value,
+    phone: document.getElementById('editPhone').value,
+    mobile: document.getElementById('editMobile').value,
+    updated_by: CURRENT_USER.id,
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await sb.from('hostels').update(updates).eq('id', editingId);
+  if(error){ msg.className='err'; msg.textContent = '⚠ ' + error.message; return; }
+  msg.className='ok'; msg.textContent = '✓ Saved.';
+  await loadHostels();
+  setTimeout(()=> document.getElementById('editOverlay').classList.remove('open'), 700);
+});
+
+// ---------- UPLOADS ----------
+function renderUploadHostelSelect(){
+  const sel = document.getElementById('uploadHostelSelect');
+  const editable = HOSTELS.filter(canEdit);
+  sel.innerHTML = editable.map(h=>`<option value="${h.id}">${esc(h.name || h.district)} (${esc(h.state)})</option>`).join('')
+    || '<option disabled>No hostels editable by your account</option>';
+}
+
+let uploadRequestId = 0;
+document.getElementById('uploadBtn').addEventListener('click', async ()=>{
+  const thisRequest = ++uploadRequestId;
+  const btn = document.getElementById('uploadBtn');
+  const msg = document.getElementById('uploadMsg');
+  const hostelId = document.getElementById('uploadHostelSelect').value;
+  const category = document.getElementById('uploadCategory').value;
+  const fileInput = document.getElementById('uploadFile');
+  const file = fileInput.files[0];
+  if(!hostelId || !file){ msg.style.color='var(--bad)'; msg.textContent = 'Choose a hostel and a file first.'; return; }
+  const MAX_SIZE = 45 * 1024 * 1024; // 45MB safety margin under Supabase's 50MB free-tier cap
+  if(file.size > MAX_SIZE){
+    msg.style.color='var(--bad)';
+    msg.textContent = `⚠ File is ${(file.size/1024/1024).toFixed(1)} MB — max allowed is 45 MB. Please compress it or split it up.`;
+    return;
+  }
+  btn.disabled = true;
+  msg.style.color='var(--muted)'; msg.textContent = 'Uploading…';
+  const path = `${hostelId}/${Date.now()}_${file.name}`;
+  const { error: upErr } = await sb.storage.from(UPLOAD_BUCKET).upload(path, file);
+  if(thisRequest !== uploadRequestId){ return; } // a newer attempt has already started; ignore this stale result
+  if(upErr){ msg.style.color='var(--bad)'; msg.textContent = '⚠ ' + upErr.message; btn.disabled = false; return; }
+  const { error: dbErr } = await sb.from('uploads').insert({
+    hostel_id: hostelId, file_name: file.name, storage_path: path,
+    category, uploaded_by: CURRENT_USER.id, status: 'pending'
+  });
+  if(thisRequest !== uploadRequestId){ return; }
+  if(dbErr){ msg.style.color='var(--bad)'; msg.textContent = '⚠ ' + dbErr.message; btn.disabled = false; return; }
+  msg.style.color='var(--good)'; msg.textContent = '✓ Uploaded — pending admin approval.';
+  fileInput.value = '';
+  btn.disabled = false;
+  await loadUploads();
+});
+
+async function loadUploads(){
+  const { data, error } = await sb.from('uploads').select('*, hostels(name, state, district)').order('uploaded_at', {ascending:false});
+  if(error){ console.error(error); return; }
+  UPLOADS = data || [];
+  document.querySelector('#uploadsTbl tbody').innerHTML = UPLOADS.map(u=>
+    `<tr><td>${esc(u.hostels?.name || u.hostels?.district) || '—'}</td><td>${esc(u.category)||'—'}</td><td>${esc(u.file_name)}</td>
+     <td><span class="pill ${u.status}">${u.status}</span></td><td>${new Date(u.uploaded_at).toLocaleDateString('en-IN')}</td></tr>`
+  ).join('');
+}
+
+async function loadApprovals(){
+  if(!CURRENT_PROFILE || CURRENT_PROFILE.role !== 'admin') return;
+  const pending = UPLOADS.filter(u=>u.status==='pending');
+  document.querySelector('#approvalsTbl tbody').innerHTML = pending.map(u=>
+    `<tr><td>${esc(u.hostels?.name || u.hostels?.district) || '—'}</td><td>${esc(u.category)||'—'}</td><td>${esc(u.file_name)}</td>
+     <td>${new Date(u.uploaded_at).toLocaleDateString('en-IN')}</td>
+     <td>
+       <button class="edit-link" onclick="setUploadStatus('${u.id}','approved')">Approve</button>
+       &nbsp;|&nbsp;
+       <button class="edit-link" style="color:var(--bad)" onclick="setUploadStatus('${u.id}','rejected')">Reject</button>
+     </td></tr>`
+  ).join('') || '<tr><td colspan="5" style="color:var(--muted)">No pending files.</td></tr>';
+}
+
+window.setUploadStatus = async function(id, status){
+  const { error } = await sb.from('uploads').update({status}).eq('id', id);
+  if(error){ alert(error.message); return; }
+  await loadUploads();
+  await loadApprovals();
+};
+
+// ---------- FOOTER CLOCK ----------
+function tickClock(){
+  const el = document.getElementById('footerClock');
+  if(el) el.textContent = new Date().toLocaleString('en-IN', { dateStyle:'medium', timeStyle:'medium' });
+}
+tickClock();
+setInterval(tickClock, 1000);
+</script>
+</body>
+</html>
