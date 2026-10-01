@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MY Bharat Buildings</title><script>var FB="data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='#17255e'/><circle cx='50' cy='50' r='43' fill='none' stroke='#f28c28' stroke-width='5'/><text x='50' y='60' font-size='30' font-weight='700' text-anchor='middle' fill='#fff' font-family='Arial'>MY</text></svg>")</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#17255e;--saf:#f28c28;--grn:#1f9d55;--bg:#f4f6fb;--card:#fff;--line:#dde2ee;--tx:#1b2033}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{font-family:'Public Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);opacity:0;transition:opacity .5s;user-select:none;-webkit-user-select:none}
+body.ready{opacity:1}
+input,textarea{user-select:text}
+.hide{display:none!important}
+.logo{height:44px;width:44px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;border:3px solid var(--saf);overflow:hidden}
+.logo img{width:100%;height:100%;object-fit:cover}
+#loginView{min-height:100%;display:flex;flex-direction:column;background:linear-gradient(160deg,var(--navy) 55%,#2c3f93)}
+.lbox{margin:auto;background:#fff;padding:32px;border-radius:14px;width:min(380px,92vw);box-shadow:0 20px 50px #0004;text-align:center}
+.lbox .logo{width:84px;height:84px;margin:0 auto 12px;font-size:20px}
+label{display:block;text-align:left;font-size:13px;font-weight:600;margin:12px 0 4px}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:7px;font:inherit;background:#fff}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--saf);outline-offset:1px}
+button{font:inherit;cursor:pointer;border:0;border-radius:7px;padding:9px 16px;font-weight:600}
+.pri{background:var(--navy);color:#fff}.sec{background:#e8ebf5;color:var(--navy)}.acc{background:var(--saf);color:#fff}
+.lbox button.pri{width:100%;margin-top:18px}
+.err{color:#c0392b;font-size:13px;margin-top:10px;min-height:16px}
+footer{padding:10px;text-align:center;font-size:12px;color:#cfd6f0;background:#0e1744}
+footer b{display:block;color:#fff}
+#appView{min-height:100%;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:#fff;border-bottom:3px solid var(--saf);flex-wrap:wrap}
+header h1{font-size:19px;margin:0;color:var(--navy)}
+.beta{background:var(--grn);color:#fff;font-size:11px;padding:3px 8px;border-radius:12px;font-weight:700}
+.sp{flex:1}.prof{display:flex;align-items:center;gap:10px}
+.av{width:42px;height:42px;border-radius:50%;background:#dfe4f3;display:grid;place-items:center;color:#7a86b0}
+.pi{font-size:13px;line-height:1.3}.pi small{color:#667}
+.timer{font-variant-numeric:tabular-nums;background:#eef1fa;padding:5px 10px;border-radius:6px;font-weight:700;color:var(--navy);font-size:13px}
+.timer.low{background:#fde2e0;color:#c0392b}
+nav{display:flex;gap:4px;padding:8px 20px 0;background:#fff;border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{background:none;border-radius:7px 7px 0 0;color:#556;white-space:nowrap}
+nav button.on{background:var(--bg);color:var(--navy);border-bottom:3px solid var(--navy)}
+main{flex:1;padding:20px;max-width:1300px;width:100%;margin:auto}
+.tab{animation:in .35s}@keyframes in{from{opacity:0}to{opacity:1}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.wip{background:#fff4e3;color:#9a5b00;border-radius:6px;padding:6px 10px;font-size:13px;margin-bottom:14px;display:inline-block}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.bar>*{flex:0 1 180px}.bar .sp{flex:1 1 20px}.bar button{flex:none}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;background:#fff;font-size:14px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left}th{background:#eef1fa;color:var(--navy);position:sticky;top:0}
+td img{width:64px;height:44px;object-fit:cover;border-radius:5px;background:#e5e8f2}
+#mapBox{position:relative;height:520px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}#map{height:100%}
+.maint{position:absolute;inset:0;z-index:600;pointer-events:none;display:grid;place-items:center;overflow:hidden}
+.maint span{transform:rotate(-28deg);font-size:clamp(26px,6vw,58px);font-weight:700;color:#c0392b;opacity:.35;border:6px solid #c0392b;padding:6px 24px;border-radius:12px;white-space:nowrap}
+.modal{position:fixed;inset:0;background:#0007;z-index:2000;display:grid;place-items:center;padding:14px}
+.mb{background:#fff;border-radius:12px;padding:20px;width:min(720px,100%);max-height:94vh;overflow:auto;position:relative}
+.mb.big{width:min(960px,100%)}
+.x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;background:#d62828;color:#fff;padding:0;font-size:18px;line-height:1;z-index:3}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 14px}.fg .w{grid-column:1/-1}
+.steps{display:flex;gap:6px;margin:6px 0 10px}.steps i{flex:1;height:5px;border-radius:3px;background:#dfe4f3}.steps i.on{background:var(--saf)}
+.pill{padding:2px 8px;border-radius:10px;background:#e8ebf5;font-size:12px}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:8px;z-index:3000;transition:.3s;opacity:0;pointer-events:none}
+#toast.s{opacity:1}
+#loader{position:fixed;inset:0;z-index:5000;background:var(--navy);color:#fff;display:grid;place-content:center;justify-items:center;gap:16px;transition:opacity .5s}
+#loader.off{opacity:0;pointer-events:none}
+.sp1{width:54px;height:54px;border:5px solid #ffffff33;border-top-color:var(--saf);border-right-color:var(--grn);border-radius:50%;animation:r 0.9s linear infinite}
+@keyframes r{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.top{position:sticky;top:0;z-index:1000}
+#appView footer{position:sticky;bottom:0;z-index:1000}
+#mapBox{isolation:isolate}
+.maint span{border:0;opacity:.18}
+.av{font-weight:700;font-size:18px;color:var(--navy);background:#dfe4f3;overflow:hidden}
+.note{color:#8a8fa3;font-size:12px;margin:12px 0 0}
+.ic{background:none;font-size:17px;padding:4px 6px}.ic:hover{background:#eef1fa}
+.m2{z-index:2500}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}.kp small{color:#667;display:block}.kp b{font-size:22px;color:var(--navy)}
+#dd{display:block}
+</style></head>
+<body>
+<div id="loader"><div class="sp1"></div><div id="ltxt">Loading…</div></div>
+
+<section id="loginView" class="hide">
+ <div class="lbox">
+  <div class="logo"><img src="logo.png" alt="MY Bharat" onerror="this.onerror=null;this.src=FB"></div>
+  <h2 style="margin:0;color:var(--navy)">MY Bharat Buildings</h2>
+  <p style="color:#667;font-size:13px;margin:4px 0 0">Sign in with your official email</p>
+  <label for="em">Email</label><input id="em" type="email" placeholder="example@gov.in" autocomplete="username">
+  <label for="pw">Password</label><input id="pw" type="password" placeholder="••••••••" autocomplete="current-password">
+  <button class="pri" id="loginBtn">Log in</button><div class="err" id="lerr"></div><p class="note">Access only for designated users</p>
+ </div>
+ <footer class="ft"></footer>
+</section>
+
+<section id="appView" class="hide">
+ <div class="top"><header>
+  <div class="logo"><img src="logo.png" alt="" onerror="this.onerror=null;this.src=FB"></div>
+  <h1>MY Bharat Buildings</h1><span class="beta">BETA V1.0</span><div class="sp"></div>
+  <div class="prof"><div class="av" id="avatar">&#128100;</div>
+   <div class="pi"><b id="pName"></b><br><small id="pRole"></small></div>
+   <div class="timer" id="timer" title="Auto logout timer">60:00</div>
+   <button class="sec" id="logoutBtn">Log out</button></div>
+ </header>
+ <nav id="nav"></nav></div>
+ <main>
+  <div class="tab" id="t-overview">
+   <span class="wip">Overview &ndash; work in progress</span><div class="bar" id="ovF"></div><div class="kpis" id="kpis"></div>
+   <div class="grid2">
+    <div class="card"><b>Ownership status</b><canvas id="c1"></canvas></div>
+    <div class="card"><b>Buildings by district</b><canvas id="c2"></canvas></div>
+    <div class="card"><b>Top 5 by land area (cents)</b><canvas id="c3"></canvas></div>
+    <div class="card"><b>Meetings per month</b><canvas id="c4"></canvas></div>
+    <div class="card"><b>Building condition</b><canvas id="c5"></canvas></div>
+   </div></div>
+  <div class="tab hide" id="t-map"><div id="mapBox"><div id="map"></div><div class="maint"><span>PAGE UNDER MAINTENANCE</span></div></div>
+   <p style="font-size:13px;color:#667">Markers use the latitude/longitude saved with each building (auto-read from long Google Maps links).</p></div>
+  <div class="tab hide" id="t-reg">
+   <div class="bar"><div><b id="regCount"></b></div><div class="sp"></div><span id="expBox" class="hide" style="flex:none"><button class="sec" onclick="expCSV()">Export CSV</button> <button class="sec" onclick="expRep('pdf')">PDF</button> <button class="sec" onclick="expRep('img')">Image</button></span><button class="acc" id="newB">+ Create new record</button></div>
+   <div class="bar" id="regF"></div>
+   <div class="tw"><table><thead><tr><th>State</th><th>District</th><th>DYO name</th><th>Preview</th><th></th></tr></thead><tbody id="regBody"></tbody></table></div></div>
+  <div class="tab hide" id="t-files">
+   <div class="bar"><div><b id="fileCount"></b></div><div class="sp"></div><button class="acc" id="newF">+ Upload / add link</button></div>
+   <div class="bar" id="fileF"></div>
+   <div class="tw"><table><thead><tr><th>File name</th><th>Type</th><th>State</th><th>District</th><th>Date</th><th></th></tr></thead><tbody id="fileBody"></tbody></table></div></div>
+  <div class="tab hide" id="t-meet">
+   <div class="bar"><div><b id="meetCount"></b></div><div class="sp"></div><button class="acc" id="newM">+ Add meeting</button></div><div class="bar" id="meetF"></div>
+   <div class="tw"><table><thead><tr><th>Date</th><th>State</th><th>District</th><th>Agenda</th><th>Minutes status</th><th></th></tr></thead><tbody id="meetBody"></tbody></table></div></div>
+ </main>
+ <footer class="ft"></footer>
+</section>
+<div id="toast"></div><div id="modalRoot"></div><div id="modalRoot2"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+/* ===== CONFIG: paste your Supabase project values ===== */
+const SUPABASE_URL='https://doqtbmzfadnzbxnvkidx.supabase.co', SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvcXRibXpmYWRuemJ4bnZraWR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3NTY5NTgsImV4cCI6MjEwNjMzMjk1OH0.wjwq7KzXhsNXfkVv0c7tNzGdhJ_IytcLs1wkYF4mLFo';
+const SESSION_MIN=60, WARN_MIN=10, BUCKET='building-docs';
+/* ===================================================== */
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true}});
+const $=id=>document.getElementById(id);
+const OPT={own:['Nehru Yuva Kendra - Patta Name Transferred','Government','Leased','Rented','Other'],
+ proof:['Yes - Patta Available (Offline)','Yes - Available (Online)','No'],
+ doc:['Patta','Sale deed','Gift deed','Allotment order','Lease deed','Other'],
+ cond:['Good','Fair','Needs repair','Dilapidated'],use:['Utilized','Partially utilized','Not utilized'],yn:['No','Yes']};
+const DT={land_record:'Land record',bhunaksha:'Bhunaksha',orders_copy:'Relevant orders copy',internal_photo:'Internal photograph',external_photo:'External photograph'};
+const STATES=['Andaman and Nicobar Islands','Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chandigarh','Chhattisgarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Goa','Gujarat','Haryana','Himachal Pradesh','Jammu and Kashmir','Jharkhand','Karnataka','Kerala','Ladakh','Lakshadweep','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Puducherry','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
+let me=null,B=[],D=[],M=[],charts=[],map,layer,tInt;
+
+/* --- security deterrents (real security is Supabase RLS) --- */
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{const k=e.key.toLowerCase();
+ if(e.key==='F12'||(e.ctrlKey&&['u','s','p'].includes(k))||(e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(k))||(e.metaKey&&e.altKey&&['i','u'].includes(k)))e.preventDefault()},true);
+
+/* --- footer clock (IST) --- */
+function tick(){const n=new Date(),o={timeZone:'Asia/Kolkata'};
+ const t=new Intl.DateTimeFormat('en-IN',{...o,weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(n)+' | '+new Intl.DateTimeFormat('en-IN',{...o,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}).format(n)+' IST';
+ document.querySelectorAll('.ft').forEach(f=>f.innerHTML='<b>Developed by MY Bharat Pragati Vihar</b>'+t)}
+setInterval(tick,1000);tick();
+
+const toast=m=>{const t=$('toast');t.textContent=m;t.className='s';setTimeout(()=>t.className='',2800)};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function loader(on,txt){$('ltxt').textContent=txt||'Loading…';$('loader').classList.toggle('off',!on)}
+function show(v){$('loginView').classList.toggle('hide',v!=='login');$('appView').classList.toggle('hide',v!=='app');document.body.classList.add('ready')}
+
+/* --- auth --- */
+$('loginBtn').onclick=async()=>{$('lerr').textContent='';loader(true,'Signing you in…');
+ const{error}=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});
+ if(error){loader(false);$('lerr').textContent=error.message;return}
+ localStorage.setItem('mybExp',Date.now()+SESSION_MIN*60000); /* absolute expiry: refresh does not reset */
+ await boot(true)};
+$('pw').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginBtn').click()});
+$('logoutBtn').onclick=()=>logout('Logging out…');
+async function logout(msg){clearInterval(tInt);loader(true,msg);await sb.auth.signOut();localStorage.removeItem('mybExp');
+ setTimeout(()=>{me=null;show('login');loader(false)},1200)}
+async function boot(fresh){
+ const{data:{session}}=await sb.auth.getSession();
+ const exp=+localStorage.getItem('mybExp')||0;
+ if(!session||Date.now()>exp){if(session)await sb.auth.signOut();show('login');loader(false);return}
+ const{data:p,error}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+ if(error||!p){await sb.auth.signOut();show('login');loader(false);$('lerr').textContent='No profile assigned. Contact administrator.';return}
+ me=p;$('pName').textContent=p.full_name;$('avatar').textContent=(p.full_name.trim()[0]||'?').toUpperCase();$('expBox').classList.toggle('hide',p.role!=='admin');
+ $('pRole').textContent=p.role==='admin'?'Administrator / HQ':p.role==='state'?'State Officer - '+p.state:'District Officer - '+p.district+', '+p.state;
+ if(p.avatar_url)$('avatar').innerHTML='<img src="'+esc(p.avatar_url)+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
+ buildNav();startTimer(exp);await loadAll();show('app');tab('overview');
+ setTimeout(()=>loader(false),fresh?500:200)}
+let warned=false;
+function startTimer(exp){warned=false;clearInterval(tInt);const f=()=>{const s=Math.max(0,Math.floor((exp-Date.now())/1000));
+ $('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+ $('timer').classList.toggle('low',s<=WARN_MIN*60);
+ if(s<=WARN_MIN*60&&s>0&&!warned&&!localStorage.getItem('mybWarn'+exp)){warned=true;localStorage.setItem('mybWarn'+exp,1);
+  modal('<h3>Session ending soon</h3><p>You will be logged out in about '+Math.ceil(s/60)+' minutes. Please save your work.</p><button class="pri" onclick="closeM()">OK</button>')}
+ if(s<=0){clearInterval(tInt);logout('Session expired. Logging out…')}};f();tInt=setInterval(f,1000)}
+
+/* --- nav --- */
+const TABS=[['overview','Overview'],['map','Map'],['reg','Building registry'],['files','File uploads'],['meet','Meeting activities']];
+function buildNav(){$('nav').innerHTML=TABS.map(t=>`<button data-t="${t[0]}">${t[1]}</button>`).join('');
+ $('nav').onclick=e=>{if(e.target.dataset.t)tab(e.target.dataset.t)}}
+function tab(n){TABS.forEach(t=>$('t-'+t[0]).classList.toggle('hide',t[0]!==n));
+ document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===n));
+ if(n==='overview')charts_();if(n==='map')mapInit()}
+
+/* --- data --- */
+let DIST={};
+const MST=['Pending','Drafted','Approved','Not required'];
+const FLD=[['state','State'],['district','District / office'],['dyo_name','DYO name'],['address','Address'],['map_link','Google map link'],['lat','Latitude'],['lng','Longitude'],['ownership_status','Ownership status'],['ownership_proof','Documentary proof'],['ownership_doc_type','Ownership document'],['land_cents','Land (cents)'],['built_up_sqm','Built-up (sq m)'],['condition','Condition'],['utilization','Utilization'],['occupant','Occupant'],['additional_structure','Additional structure'],['repair_details','Repair / maintenance'],['expenditure','Expenditure (Rs)'],['litigation','Litigation'],['encroachment','Encroachment'],['other_info','Other information'],['photo_url','Photo link']];
+const XH=['Land (hectares)','Land (sq m)','Land (sq ft)','Built-up (sq ft)'];
+const isAdmin=()=>me&&me.role==='admin';
+const ic=(t,e,f)=>`<button class="ic" title="${t}" onclick="${f}">${e}</button>`;
+const cnt=(id,n,t)=>$(id).textContent=`Showing ${n} of ${t} records`;
+async function loadAll(){const[b,d,m]=await Promise.all([sb.from('buildings').select('*').order('state').order('district'),
+ sb.from('documents').select('*').order('created_at',{ascending:false}),sb.from('meetings').select('*').order('meeting_date',{ascending:false})]);
+ B=b.data||[];D=d.data||[];M=m.data||[];['regF','fileF','meetF','ovF'].forEach(i=>$(i).dataset.stale=1);
+ renderReg();renderFiles();renderMeet();if(!$('appView').classList.contains('hide')&&!$('t-overview').classList.contains('hide'))charts_()}
+const uniq=a=>[...new Set(a.filter(Boolean))].sort();
+const scopeState=()=>me.role==='admin'?null:me.state, scopeDist=()=>me.role==='district'?me.district:null;
+const need=id=>!$(id).children.length||$(id).dataset.stale;
+function filt(id,rows,cb,extra='',noq=false){const el=$(id),old={};el.querySelectorAll('[data-k]').forEach(e=>old[e.dataset.k]=e.value);delete el.dataset.stale;
+ el.innerHTML=`<div><label>State</label><select data-k="s"><option value="">All</option>${uniq(rows.map(r=>r.state)).map(x=>`<option>${esc(x)}</option>`).join('')}</select></div>
+ <div><label>District</label><select data-k="d"><option value="">All</option>${uniq(rows.map(r=>r.district)).map(x=>`<option>${esc(x)}</option>`).join('')}</select></div>${noq?'':'<div><label>Search</label><input data-k="q" placeholder="Search\u2026"></div>'}${extra}`;
+ el.querySelectorAll('[data-k]').forEach(e=>{if(old[e.dataset.k]!=null)e.value=old[e.dataset.k]});
+ const S=el.querySelector('[data-k=s]'),Dd=el.querySelector('[data-k=d]');
+ if(scopeState()){S.value=me.state;S.disabled=true}if(scopeDist()){Dd.value=me.district;Dd.disabled=true}
+ el.oninput=cb}
+const fv=(id,k)=>{const e=$(id).querySelector('[data-k='+k+']');return e?e.value:''};
+function match(r,id,txt){const s=fv(id,'s'),d=fv(id,'d'),q=fv(id,'q').toLowerCase();
+ return(!s||r.state===s)&&(!d||r.district===d)&&(!q||txt(r).toLowerCase().includes(q))}
+function driveId(u){const m=(u||'').match(/\/d\/([\w-]+)|[?&]id=([\w-]+)/);return m?(m[1]||m[2]):null}
+const thumb=u=>{const i=driveId(u);return i?`https://drive.google.com/thumbnail?id=${i}&sz=w200`:''};
+const drivePrev=u=>{const i=driveId(u);return i?`https://drive.google.com/file/d/${i}/preview`:u};
+const driveDl=u=>{const i=driveId(u);return i?`https://drive.google.com/uc?export=download&id=${i}`:u};
+async function del(tbl,id){if(!isAdmin()||!confirm('Delete this record permanently?'))return;
+ let paths=[];if(tbl==='documents')paths=D.filter(d=>d.id===id&&d.storage_path).map(d=>d.storage_path);
+ if(tbl==='buildings')paths=D.filter(d=>d.building_id===id&&d.storage_path).map(d=>d.storage_path);
+ if(paths.length)await sb.storage.from(BUCKET).remove(paths);
+ const{error}=await sb.from(tbl).delete().eq('id',id);if(error)return toast(error.message);toast('Deleted');loadAll()}
+
+/* --- registry --- */
+const photoOf=r=>r.photo_url||(D.find(d=>d.building_id===r.id&&d.doctype==='external_photo')||{}).drive_url;
+function renderReg(){if(need('regF'))filt('regF',B,renderReg);
+ const rows=B.filter(r=>match(r,'regF',r=>r.dyo_name+r.address));cnt('regCount',rows.length,B.length);
+ $('regBody').innerHTML=rows.map(r=>{const ph=photoOf(r);
+  return `<tr><td>${esc(r.state)}</td><td>${esc(r.district)}</td><td>${esc(r.dyo_name)}</td><td>${ph?`<img src="${thumb(ph)}" alt="" style="cursor:pointer" onclick="photoView('${r.id}')" onerror="this.style.opacity=.2">`:''} ${ic(ph?'Change photo link':'Add photo link','&#9432;',`photoLink('${r.id}')`)}</td><td>${ic('Edit','&#9998;',`editB('${r.id}')`)}${isAdmin()?ic('Delete','&#128465;',`del('buildings','${r.id}')`):''}</td></tr>`}).join('')||'<tr><td colspan="5">No records yet.</td></tr>'}
+$('newB').onclick=()=>editB(null);
+function photoView(id){const u=photoOf(B.find(b=>b.id===id));openPrev(drivePrev(u),'Building photo',driveDl(u))}
+function photoLink(id){modal(`<h3 style="margin-top:0;color:var(--navy)">Photo Drive link</h3><label>Google Drive link (shared as "anyone with link")</label><input id="pl" type="url" placeholder="https://drive.google.com/file/d/..."><div class="bar" style="margin-top:14px"><button class="sec" id="plp">Preview</button><button class="pri" id="pls">Save</button></div>`);
+ const get=()=>{const u=$('pl').value.trim();if(!driveId(u)){toast('Enter a valid Drive file link');return null}return u};
+ $('plp').onclick=()=>{const u=get();if(u)openPrev(drivePrev(u),'Photo preview',driveDl(u))};
+ $('pls').onclick=async()=>{const u=get();if(!u)return;const{error}=await sb.from('buildings').update({photo_url:u}).eq('id',id);if(error)return toast(error.message);closeM();toast('Photo saved');loadAll()}}
+const dsel=(st,v,lock,req=true)=>{const L=DIST[st];return lock?`<input name="district" value="${esc(v||'')}" readonly>`:L?sel('district',L,v,req):`<input name="district" value="${esc(v||'')}" placeholder="${st?'Type district':'Select state first'}" ${req?'required':''}>`};
+/* --- exports (admin) --- */
+const rowsF=()=>B.filter(r=>match(r,'regF',r=>r.dyo_name+r.address));
+function recVals(r){const q=r.land_cents?r.land_cents*40.4686:null;return[...FLD.map(([k])=>r[k]??''),q?(q/1e4).toFixed(4):'',q?q.toFixed(2):'',q?(q*10.7639).toFixed(2):'',r.built_up_sqm?(r.built_up_sqm*10.7639).toFixed(2):'']}
+function dlb(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click()}
+function expCSV(){if(!isAdmin())return;const h=[...FLD.map(f=>f[1]),...XH];
+ const q=v=>{v=String(v);if(/^[=+@]/.test(v)||(v[0]==='-'&&isNaN(v)))v="'"+v;return'"'+v.replace(/"/g,'""')+'"'};
+ dlb(new Blob(['\ufeff'+[h,...rowsF().map(recVals)].map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv'}),'MY_Bharat_Buildings.csv')}
+async function expRep(kind){if(!isAdmin())return;const rows=rowsF();if(!rows.length)return toast('No records to export');toast('Preparing export\u2026');
+ const h=[...FLD.map(f=>f[1]),...XH],el=document.createElement('div');
+ el.style.cssText='position:fixed;left:-9999px;top:0;width:800px;background:#fff;padding:20px;font:13px Arial';
+ el.innerHTML='<h2 style="color:#17255e">MY Bharat Buildings - Building Registry</h2>'+rows.map((r,n)=>{const v=recVals(r);
+  return `<div style="font-weight:700;margin:8px 0 4px">${n+1}. ${esc(r.dyo_name)}</div><table style="width:100%;border-collapse:collapse;margin-bottom:16px">`+h.map((l,i)=>`<tr><td style="border:1px solid #ccc;padding:4px 6px;width:34%;background:#eef1fa"><b>${esc(l)}</b></td><td style="border:1px solid #ccc;padding:4px 6px;word-break:break-all">${esc(v[i])}</td></tr>`).join('')+'</table>'}).join('');
+ document.body.appendChild(el);const cv=await html2canvas(el,{scale:1.5,backgroundColor:'#fff'});el.remove();
+ if(kind==='img')return cv.toBlob(b=>dlb(b,'MY_Bharat_Buildings.png'));
+ const pdf=new window.jspdf.jsPDF('p','mm','a4'),W=210,H=297,ih=cv.height*W/cv.width,img=cv.toDataURL('image/jpeg',.92);
+ for(let y=0,i=0;y<ih;y+=H,i++){if(i)pdf.addPage();pdf.addImage(img,'JPEG',0,-y,W,ih)}pdf.save('MY_Bharat_Buildings.pdf')}
+const sel=(n,a,v,req)=>`<select name="${n}" ${req?'required':''}><option value="">Select</option>${a.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('')}</select>`;
+let step=0,cur={};
+function editB(id){cur=id?{...B.find(b=>b.id===id)}:{state:scopeState()||'',district:scopeDist()||''};step=0;wizard(id)}
+function wizard(id){const c=cur,st=scopeState(),ds=scopeDist();
+ const S=[`<div class="fg"><div><label>State *</label>${st?`<input name="state" value="${esc(st)}" readonly>`:sel('state',STATES,c.state,1).replace('<select','<select id="sst"')}</div>
+ <div><label>District / office *</label><div id="dd">${dsel(c.state,c.district,ds)}</div></div>
+ <div class="w"><label>DYO name *</label><input name="dyo_name" value="${esc(c.dyo_name||'')}" required></div>
+ <div class="w"><label>Complete address</label><textarea name="address" rows="2">${esc(c.address||'')}</textarea></div>
+ <div class="w"><label>Google Map link</label><input name="map_link" value="${esc(c.map_link||'')}" placeholder="https://www.google.com/maps/...@lat,lng"></div>
+ <div><label>Latitude</label><input name="lat" type="number" step="any" min="-90" max="90" value="${c.lat??''}"></div>
+ <div><label>Longitude</label><input name="lng" type="number" step="any" min="-180" max="180" value="${c.lng??''}"></div></div>`,
+ `<div class="fg"><div><label>Ownership status</label>${sel('ownership_status',OPT.own,c.ownership_status)}</div>
+ <div><label>Documentary proof of ownership</label>${sel('ownership_proof',OPT.proof,c.ownership_proof)}</div>
+ <div><label>Type of ownership document</label>${sel('ownership_doc_type',OPT.doc,c.ownership_doc_type)}</div>
+ <div><label>Total land area (cents)</label><input name="land_cents" type="number" step="any" min="0.001" value="${c.land_cents??''}"></div>
+ <div class="w"><small id="conv"></small></div>
+ <div><label>Built-up area (sq. m)</label><input name="built_up_sqm" type="number" step="any" min="0.01" value="${c.built_up_sqm??''}"></div>
+ <div class="w"><small id="conv2"></small></div>
+ <div><label>Present condition</label>${sel('condition',OPT.cond,c.condition)}</div>
+ <div><label>Present utilization</label>${sel('utilization',OPT.use,c.utilization)}</div></div>`,
+ `<div class="fg"><div class="w"><label>Present occupant / user</label><input name="occupant" value="${esc(c.occupant||'')}"></div>
+ <div class="w"><label>Additional structure / extension</label><textarea name="additional_structure" rows="2">${esc(c.additional_structure||'Nil')}</textarea></div>
+ <div class="w"><label>Repair / renovation / maintenance carried out</label><textarea name="repair_details" rows="2">${esc(c.repair_details||'Nil')}</textarea></div>
+ <div><label>Expenditure incurred (&#8377;)</label><input name="expenditure" type="number" min="0" step="any" value="${c.expenditure??''}"></div>
+ <div><label>Litigation / dispute</label>${sel('litigation',OPT.yn,c.litigation||'No')}</div>
+ <div><label>Encroachment</label>${sel('encroachment',OPT.yn,c.encroachment||'No')}</div>
+ <div class="w"><label>Any other relevant information</label><textarea name="other_info" rows="3">${esc(c.other_info||'')}</textarea></div></div>`];
+ modal(`<h3 style="margin-top:0;color:var(--navy)">${id?'Edit':'New'} building record</h3><div class="steps">${S.map((_,i)=>`<i class="${i<=step?'on':''}"></i>`).join('')}</div>
+ <form id="wf">${S[step]}<div class="bar" style="margin:18px 0 0;justify-content:space-between"><button type="button" class="sec" id="pv" ${step?'':'disabled'}>Previous</button>
+ <span>Step ${step+1} of 3</span><button class="pri" id="nx">${step==2?'Save record':'Next'}</button></div></form>`,1);
+ const f=$('wf');if($('sst'))$('sst').onchange=e=>{$('dd').innerHTML=dsel(e.target.value,'',false)};const cv=()=>{const l=+f.land_cents?.value,b=+f.built_up_sqm?.value;
+  if(l>0&&$('conv')){const sq=l*40.4686;$('conv').textContent=`= ${(sq/10000).toFixed(4)} ha | ${sq.toFixed(2)} sq. m | ${(sq*10.7639).toFixed(2)} sq. ft`}
+  if(b>0&&$('conv2'))$('conv2').textContent=`= ${(b*10.7639).toFixed(2)} sq. ft`};f.oninput=cv;cv();
+ $('pv').onclick=()=>{grab(f);step--;wizard(id)};
+ f.onsubmit=async e=>{e.preventDefault();grab(f);if(step<2){step++;return wizard(id)}await saveB(id)}}
+function grab(f){new FormData(f).forEach((v,k)=>cur[k]=v===''?null:v)}
+async function saveB(id){const o={...cur};['lat','lng','land_cents','built_up_sqm','expenditure'].forEach(k=>o[k]=o[k]==null?null:+o[k]);
+ if((o.lat==null||o.lng==null)&&o.map_link){const m=o.map_link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||o.map_link.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);if(m){o.lat=+m[1];o.lng=+m[2]}}
+ delete o.id;delete o.created_at;delete o.created_by;o.updated_at=new Date().toISOString();
+ const q=id?sb.from('buildings').update(o).eq('id',id):sb.from('buildings').insert(o);
+ const{error}=await q;if(error)return toast(error.message);closeM();toast('Record saved');await loadAll()}
+
+/* --- files --- */
+function renderFiles(){if(need('fileF'))filt('fileF',B,renderFiles,`<div><label>Document type</label><select data-k="t"><option value="">All</option>${Object.entries(DT).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>`);
+ const t=fv('fileF','t'),rows=D.filter(r=>match(r,'fileF',r=>r.file_name+'')&&(!t||r.doctype===t));cnt('fileCount',rows.length,D.length);
+ $('fileBody').innerHTML=rows.map(r=>`<tr><td>${esc(r.file_name||r.drive_url)}</td><td>${DT[r.doctype]}</td><td>${esc(r.state)}</td><td>${esc(r.district)}</td><td>${new Date(r.created_at).toLocaleDateString('en-IN')}</td><td>${ic('View','&#128065;',`viewF('${r.id}')`)}${isAdmin()?ic('Delete','&#128465;',`del('documents','${r.id}')`):''}</td></tr>`).join('')||'<tr><td colspan="6">No files.</td></tr>'}
+$('newF').onclick=()=>{if(!B.length)return toast('Create a building record first');
+ modal(`<h3 style="margin-top:0;color:var(--navy)">Add document</h3><form id="ff"><label>Building</label><select name="b" required>${B.map(b=>`<option value="${b.id}">${esc(b.state)} / ${esc(b.district)} / ${esc(b.dyo_name)}</option>`).join('')}</select>
+ <label>Document type</label><select name="t" id="ft" required><option value="">Select</option>${Object.entries(DT).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>
+ <div id="fin"></div><div class="bar" style="margin-top:16px"><button type="button" class="sec" id="fpv">Preview</button><button class="pri">Save</button></div></form>`);
+ $('ft').onchange=e=>{const ph=e.target.value.includes('photo');$('fin').innerHTML=ph?'<label>Google Drive link (shared view access)</label><input name="url" type="url" required placeholder="https://drive.google.com/file/d/...">':'<label>PDF file (max 500 KB)</label><input name="file" type="file" accept="application/pdf" required>'};
+ $('fpv').onclick=()=>{const f=$('ff').elements;if(!f.t.value)return toast('Select a document type');
+  if(f.url){const u=f.url.value.trim();if(!driveId(u))return toast('Enter a valid Drive file link');return openPrev(drivePrev(u),'Preview',driveDl(u))}
+  const fl=f.file&&f.file.files[0];if(!fl)return toast('Choose a PDF first');if(fl.type!=='application/pdf')return toast('Only PDF allowed');openPrev(URL.createObjectURL(fl),fl.name)};
+ $('ff').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target),b=B.find(x=>x.id===fd.get('b')),t=fd.get('t');
+  const slug=x=>String(x).trim().replace(/[^A-Za-z0-9]+/g,'_');const base=`${slug(b.state)}_${slug(b.district)}_${t}`;let row={building_id:b.id,state:b.state,district:b.district,doctype:t};
+  if(t.includes('photo')){if(!driveId(fd.get('url')))return toast('Enter a valid Drive file link');row.drive_url=fd.get('url');row.file_name=base+'_'+Date.now()}
+  else{const f=fd.get('file');if(f.type!=='application/pdf')return toast('Only PDF allowed');if(f.size>512000)return toast('File must be under 500 KB');
+   const name=`${base}_${Date.now()}.pdf`,path=`${b.state}/${b.district}/${name}`;
+   const up=await sb.storage.from(BUCKET).upload(path,f,{contentType:'application/pdf'});if(up.error)return toast(up.error.message);row.storage_path=path;row.file_name=name}
+  const{error}=await sb.from('documents').insert(row);if(error)return toast(error.message);closeM();toast('Saved');await loadAll()}};
+async function viewF(id){const r=D.find(d=>d.id===id);
+ if(r.drive_url)return openPrev(drivePrev(r.drive_url),r.file_name,driveDl(r.drive_url));
+ const{data,error}=await sb.storage.from(BUCKET).download(r.storage_path);if(error)return toast(error.message);
+ openPrev(URL.createObjectURL(new Blob([data],{type:'application/pdf'})),r.file_name)}
+
+/* --- meetings --- */
+function renderMeet(){if(need('meetF'))filt('meetF',[...B,...M],renderMeet,`<div><label>From date</label><input type="date" data-k="f"></div><div><label>To date</label><input type="date" data-k="t"></div><div><label>Status</label><select data-k="m"><option value="">All</option>${MST.map(x=>`<option>${x}</option>`).join('')}</select></div>`);
+ const f=fv('meetF','f'),t=fv('meetF','t'),m=fv('meetF','m');
+ const rows=M.filter(x=>match(x,'meetF',x=>x.agenda)&&(!f||x.meeting_date>=f)&&(!t||x.meeting_date<=t)&&(!m||x.minutes_status===m));cnt('meetCount',rows.length,M.length);
+ $('meetBody').innerHTML=rows.map(m=>`<tr><td>${m.meeting_date}</td><td>${esc(m.state)}</td><td>${esc(m.district||'-')}</td><td>${esc(m.agenda)}</td><td><span class="pill">${esc(m.minutes_status)}</span></td><td>${isAdmin()?ic('Delete','&#128465;',`del('meetings','${m.id}')`):''}</td></tr>`).join('')||'<tr><td colspan="6">No meetings found.</td></tr>'}
+$('newM').onclick=()=>{modal(`<h3 style="margin-top:0;color:var(--navy)">Add meeting</h3><form id="mf"><label>State</label>${scopeState()?`<input name="state" value="${esc(me.state)}" readonly>`:sel('state',STATES,'',1).replace('<select','<select id="mst"')}
+ <label>District (optional for state-level)</label><div id="dd">${dsel(scopeState()||'',scopeDist()||'',!!scopeDist(),false)}</div>
+ <label>Date</label><input type="date" name="meeting_date" required><label>Agenda</label><textarea name="agenda" rows="3" required></textarea>
+ <label>Minutes status</label>${sel('minutes_status',MST,'Pending',1)}<div class="bar" style="margin-top:16px"><button class="pri" style="flex:1">Save meeting</button></div></form>`);
+ if($('mst'))$('mst').onchange=e=>{$('dd').innerHTML=dsel(e.target.value,'',false,false)};
+ $('mf').onsubmit=async e=>{e.preventDefault();const o=Object.fromEntries(new FormData(e.target));if(!o.district)o.district=null;
+  const{error}=await sb.from('meetings').insert(o);if(error)return toast(error.message);closeM();toast('Saved');await loadAll()}};
+
+/* --- overview (scoped filters) --- */
+function charts_(){if(need('ovF'))filt('ovF',B,charts_,['own','cond','use'].map((k,i)=>`<div><label>${['Ownership','Condition','Utilization'][i]}</label><select data-k="${'ocu'[i]}"><option value="">All</option>${OPT[k].map(x=>`<option>${esc(x)}</option>`).join('')}</select></div>`).join(''),true);
+ charts.forEach(c=>c.destroy());charts=[];
+ const s=fv('ovF','s'),d=fv('ovF','d'),o=fv('ovF','o'),c=fv('ovF','c'),u=fv('ovF','u');
+ const b=B.filter(x=>(!s||x.state===s)&&(!d||x.district===d)&&(!o||x.ownership_status===o)&&(!c||x.condition===c)&&(!u||x.utilization===u));
+ const m=M.filter(x=>(!s||x.state===s)&&(!d||x.district===d)),sum=k=>b.reduce((a,x)=>a+(+x[k]||0),0).toFixed(1);
+ $('kpis').innerHTML=[['Buildings',b.length],['Land (cents)',sum('land_cents')],['Built-up (sq m)',sum('built_up_sqm')],['Litigation',b.filter(x=>x.litigation==='Yes').length],['Encroachment',b.filter(x=>x.encroachment==='Yes').length],['Need repair',b.filter(x=>['Needs repair','Dilapidated'].includes(x.condition)).length],['Meetings',m.length]].map(([k,v])=>`<div class="card kp"><small>${k}</small><b>${v}</b></div>`).join('');
+ const g=(a,f)=>a.reduce((r,x)=>{const k=f(x)||'Unknown';r[k]=(r[k]||0)+1;return r},{});
+ const mk=(id,type,o,lab)=>charts.push(new Chart($(id),{type,data:{labels:Object.keys(o),datasets:[{label:lab,data:Object.values(o),backgroundColor:['#17255e','#f28c28','#1f9d55','#6c7bd1','#e4572e','#8d99ae'],borderColor:'#17255e',tension:.3}]},options:{plugins:{legend:{display:type==='pie'}}}}));
+ mk('c1','pie',g(b,x=>x.ownership_status));
+ mk('c2','bar',g(b,x=>(s||scopeState())?x.district:x.state),'Buildings');
+ const t=[...b].filter(x=>x.land_cents).sort((p,q)=>q.land_cents-p.land_cents).slice(0,5);mk('c3','bar',Object.fromEntries(t.map(x=>[x.dyo_name,x.land_cents])),'Cents');
+ mk('c4','line',g([...m].reverse(),x=>x.meeting_date.slice(0,7)),'Meetings');
+ mk('c5','pie',g(b,x=>x.condition))}
+
+/* --- map --- */
+function mapInit(){if(!map){map=L.map('map').setView([22.5,79],5);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors'}).addTo(map);layer=L.layerGroup().addTo(map)}
+ setTimeout(()=>{map.invalidateSize();layer.clearLayers();const pts=[];B.forEach(b=>{let la=b.lat,ln=b.lng;
+  if(la==null&&b.map_link){const m=b.map_link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);if(m){la=+m[1];ln=+m[2]}}
+  if(la!=null&&ln!=null){pts.push([la,ln]);L.marker([la,ln]).bindPopup(`<b>${esc(b.dyo_name)}</b><br>${esc(b.district)}, ${esc(b.state)}`).addTo(layer)}});
+  if(pts.length)map.fitBounds(pts,{padding:[40,40],maxZoom:12})},100)}
+
+/* --- modal --- */
+function modal(h){$('modalRoot').innerHTML=`<div class="modal"><div class="mb"><button class="x" onclick="closeM()" aria-label="Close">&#10005;</button>${h}</div></div>`}
+function closeM(){$('modalRoot').innerHTML=''}
+function openPrev(src,name,dl){$('modalRoot2').innerHTML=`<div class="modal m2"><div class="mb big"><button class="x" onclick="closeP()" aria-label="Close">&#10005;</button><h3 style="margin:0 40px 10px 0;word-break:break-all;font-size:15px">${esc(name)}</h3><iframe src="${esc(src)}" style="width:100%;height:68vh;border:1px solid var(--line);border-radius:8px"></iframe><p><a href="${esc(dl||src)}" ${dl?'target="_blank" rel="noopener"':''} download="${esc(name)}"><button class="acc">Download</button></a></p></div></div>`}
+function closeP(){$('modalRoot2').innerHTML=''}
+
+fetch('districts.json').then(r=>r.json()).catch(()=>({})).then(d=>{DIST=d;boot(false)});
+boot(false);
+</script></body></html>
