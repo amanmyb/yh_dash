@@ -1,0 +1,21 @@
+name: Keep Building Awake
+
+on:
+  schedule:
+    # GitHub cron runs in UTC. 19:30 UTC = 1:00 AM IST (next day).
+    # Runs on days 1, 7, 13, 19, 25, 31 of each month, so the longest gap is 6 days.
+    - cron: '30 19 */6 * *'
+  workflow_dispatch: {}  # manual trigger from the Actions tab, for testing
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping MY Bharat Buildings Supabase
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://doqtbmzfadnzbxnvkidx.supabase.co/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvcXRibXpmYWRuemJ4bnZraWR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3NTY5NTgsImV4cCI6MjEwNjMzMjk1OH0.wjwq7KzXhsNXfkVv0c7tNzGdhJ_IytcLs1wkYF4mLFo" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvcXRibXpmYWRuemJ4bnZraWR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3NTY5NTgsImV4cCI6MjEwNjMzMjk1OH0.wjwq7KzXhsNXfkVv0c7tNzGdhJ_IytcLs1wkYF4mLFo")
+          echo "HTTP status: $code"
+          [ "$code" -ge 200 ] && [ "$code" -lt 300 ]
