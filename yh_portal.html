@@ -2106,7 +2106,7 @@ function renderKpis(){
   const top5Html = top5.length ? `<table style="margin-top:10px"><tr><th>Top 5 by funds</th><th style="text-align:right">Savings</th><th style="text-align:right">Current</th><th style="text-align:right">FD</th><th style="text-align:right">Total</th></tr>
     ${top5.map(h => `<tr class="ov-click" data-drill="${drill(h.name || h.district, [h])}"><td>${esc(h.name || h.district)}</td><td style="text-align:right">${fmtINR(h.funds_savings)}</td><td style="text-align:right">${fmtINR(h.funds_current)}</td><td style="text-align:right">${fmtINR(h.funds_fd)}</td><td style="text-align:right"><b>${fmtINR(hostelFunds(h))}</b></td></tr>`).join('')}</table>` : '<div class="ov-empty">No funds entered yet.</div>';
 
-  const sec2 = `<div class="ov-sec">2 · Money in hand &amp; people</div><div class="ov-g2">
+  const sec2 = `<div class="ov-sec">2 · Funds &amp; Governance</div><div class="ov-g2">
     ${ovCard('Funds available with hostels', `Total ${fmtINR(fundsTotal)}`, `
       ${ovStack([{ n: sv, color: '#1d5cff', text: 'Savings ' + fmtINR(sv) }, { n: cu, color: '#7aa2ff', text: 'Current ' + fmtINR(cu) }, { n: fd, color: '#0e3a9e', text: 'FD ' + fmtINR(fd) }], fundsTotal, 22)}
       ${ovLegend([['#1d5cff', 'Savings ' + fmtINR(sv)], ['#7aa2ff', 'Current ' + fmtINR(cu)], ['#0e3a9e', 'Fixed Deposit ' + fmtINR(fd)]])}
@@ -2132,7 +2132,7 @@ function renderKpis(){
       </div>`)}
   </div>`;
 
-  const sec3 = `<div class="ov-sec">3 · Activity &amp; governance</div><div class="ov-g2">
+  const sec3 = `<div class="ov-sec">3 · Activity &amp; HMC Meetings</div><div class="ov-g2">
     ${ovCard('Activities &amp; events', `FY ${fyL}${isCurFy ? ' so far' : ''}`, `${acts.length} activities · ${people.toLocaleString('en-IN')} participants`, `
       ${ovCols(monthVals, MONTHS_FY, () => '#1d5cff', null, 120)}
       <div style="margin-top:10px">${ovStack([{ n: male, color: '#1d5cff', text: 'Male ' + male.toLocaleString('en-IN') }, { n: female, color: '#e05297', text: 'Female ' + female.toLocaleString('en-IN') }, { n: otherP, color: '#888', text: 'Other ' + otherP }], people, 18)}</div>
