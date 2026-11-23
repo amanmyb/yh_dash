@@ -1968,6 +1968,7 @@ function renderKpis(){
   const both = H.filter(h => isYes(h.manager_available));
   const onlyDyo = H.filter(h => isNo(h.manager_available));
   const mgrNr = H.filter(h => !isYes(h.manager_available) && !isNo(h.manager_available));
+  const dyoSits = H.filter(h => isYes(h.manager_sits_in_hostel));
   const dyoShift = H.filter(h => isYes(h.dyo_office_shifted));
   const expSoon = both.filter(h => h.manager_contract_expiry && dayDiffFromToday(h.manager_contract_expiry) >= 0 && dayDiffFromToday(h.manager_contract_expiry) <= 60);
   const expired = both.filter(h => h.manager_contract_expiry && dayDiffFromToday(h.manager_contract_expiry) < 0);
