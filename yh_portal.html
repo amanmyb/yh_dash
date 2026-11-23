@@ -1237,7 +1237,7 @@ async function onLoggedIn(user){
   if(error || !profile){
     hideAppLoading();
     document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('loginError').textContent = 'No profile found for this account. Ask an admin to add you to the profiles table.';
+    document.getElementById('loginError').textContent = 'No profile found for this account. Ask an admin to add you.';
     await sb.auth.signOut();
     return;
   }
