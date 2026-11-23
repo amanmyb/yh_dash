@@ -2115,7 +2115,7 @@ function renderKpis(){
         ${ovMini(fmtINR(median), 'median funds per hostel')}
         ${ovMini(noFunds.length, 'hostels with no funds reported', noFunds.length ? 'ov-warn' : '', drill('No funds reported', noFunds))}
       </div>${top5Html}`)}
-    ${ovCard('Manager / DYO status', `${n} hostels`, '', `
+    ${ovCard('Manager / DYO status', `${n} hostels`, ' ', `
       ${ovStack([{ n: both.length, color: OV_C.good, text: 'DYO + Manager · ' + both.length, k: drill('DYO + Manager', both) },
                  { n: onlyDyo.length, color: OV_C.warn, text: 'Only DYO · ' + onlyDyo.length, k: drill('Only DYO (no manager)', onlyDyo) },
                  { n: mgrNr.length, color: OV_C.nr, text: String(mgrNr.length), k: drill('Manager status not reported', mgrNr) }], n, 26)}
@@ -2141,7 +2141,7 @@ function renderKpis(){
         ${ovMini(idle90.length, 'hostels with no activity in 90 days', idle90.length ? 'ov-warn' : '', drill('No activity in the last 90 days', idle90))}
         ${ovMini(impressions >= 1e5 ? (impressions / 1e5).toFixed(1) + ' L' : impressions.toLocaleString('en-IN'), 'social media impressions')}
       </div>`)}
-    ${ovCard('HMC meetings', `Q${q} ${fyL} (${QUARTER_MONTHS[q - 1]})`, 'Hostel Management Committee compliance', `
+    ${ovCard('HMC meetings', `Q${q} ${fyL} (${QUARTER_MONTHS[q - 1]})`, ' ', `
       <div class="ov-row">${ovDonut([
           { n: hmcQ.ok.length, color: OV_C.good, title: 'Held, minutes uploaded', k: drill('HMC held, minutes uploaded', hmcQ.ok) },
           { n: hmcQ.pend.length, color: OV_C.warn, title: 'Held, minutes pending', k: drill('HMC held, minutes pending', hmcQ.pend) },
@@ -2166,7 +2166,7 @@ function renderKpis(){
       <td><span class="ov-pipe" style="width:${x.m * 6}px;background:${OV_C.moyas}"></span><span class="ov-pipe" style="width:${x.o * 6}px;background:${OV_C.other};margin-left:2px"></span> <span style="color:var(--muted);font-size:11px">${x.m} / ${x.o}</span></td></tr>`).join('')
     + `<tr class="ov-click" data-drill="${drill('Renovation status not reported', renoNr)}"><td style="color:var(--muted)">Not reported</td><td><span class="ov-pipe" style="width:${renoNr.length / stageMax * 100}%;background:${OV_C.nr}"></span></td><td style="text-align:right"><b>${renoNr.length}</b></td><td></td><td></td><td></td></tr>`;
   const sec4 = `<div class="ov-sec">4 · Renovation / construction proposals</div>
-    ${ovCard('Proposal pipeline — status wise with amount', 'sanctioned amount from hostel records', 'Each stage: hostels and sanctioned amount · bars show count · control split MoYAS / other', `
+    ${ovCard('Proposal pipeline — status wise with amount', '', ' ', `
       <table><tr><th style="width:27%">Stage</th><th style="width:30%">Hostels</th><th style="text-align:right">Count</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Avg / hostel</th><th>MoYAS / other</th></tr>${pipeRows}</table>
       <div class="ov-mini" style="grid-template-columns:repeat(4,1fr)">
         ${ovMini(notSanctioned.length, 'awaiting / submitted (not yet sanctioned)', '', drill('Proposal awaited or submitted', notSanctioned))}
@@ -2179,7 +2179,7 @@ function renderKpis(){
   const heatCell = v => v === null ? '<td style="color:var(--muted);font-weight:500">—</td>'
     : `<td style="background:rgba(29,92,255,${(0.08 + v / 100 * 0.75).toFixed(2)});color:${v > 55 ? '#fff' : 'var(--ink)'}">${v}%</td>`;
   const sec5 = `<div class="ov-sec">5 · Occupancy &amp; seasonality</div><div class="ov-g2">
-    ${ovCard('Average occupancy by quarter', `FY ${fyL}`, 'Q1 Apr–Jun · Q2 Jul–Sep (monsoon) · Q3 Oct–Dec · Q4 Jan–Mar. The seasonal pattern builds up as quarters are entered.',
+    ${ovCard('Average occupancy by quarter', `FY ${fyL}`, ' ',
       OCC_Q_ERR ? `<div class="ov-empty">Occupancy table not set up — run occupancy_quarterly.sql. (${esc(OCC_Q_ERR)})</div>` : `
       ${ovCols(qAvg, ['Q1 Apr–Jun', 'Q2 Jul–Sep', 'Q3 Oct–Dec', 'Q4 Jan–Mar'], i => qColors[i], v => v + '%', 130, 100)}
       <div class="ov-mini">
@@ -2187,7 +2187,7 @@ function renderKpis(){
         ${ovMini(high.length, `above 70%${lastQ ? ' (Q' + lastQ + ')' : ''}`, '', drill('Occupancy above 70%', high))}
         ${ovMini(notEntered.length, `occupancy not entered${lastQ ? ' (Q' + lastQ + ')' : ''}`, notEntered.length ? 'ov-warn' : '', drill('Occupancy not entered', notEntered))}
       </div>`)}
-    ${ovCard(`${groupBy === 'state' ? 'State' : groupBy === 'district' ? 'District' : 'Hostel'}-wise occupancy heat map`, 'avg %', 'Darker = fuller. Spot places that are seasonal or always low.',
+    ${ovCard(`${groupBy === 'state' ? 'State' : groupBy === 'district' ? 'District' : 'Hostel'}-wise occupancy heat map`, 'avg %', ' ',
       heatRows.length ? `<div style="max-height:250px;overflow:auto;"><table class="ov-heat"><tr><th>${groupBy === 'state' ? 'State' : groupBy === 'district' ? 'District' : 'Hostel'}</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th></tr>
         ${heatRows.map(r => `<tr><td>${esc(r.g)}</td>${r.vals.map(heatCell).join('')}</tr>`).join('')}</table></div>` : '<div class="ov-empty">No occupancy entered for this financial year yet.</div>')}
   </div>`;
