@@ -2088,7 +2088,7 @@ function renderKpis(){
     + ovHbar('⚪ Not reported', [{ n: condNr.length, color: OV_C.nr, title: 'Not reported' }], condNr.length, condMax, drill('Status not reported', condNr));
 
   const sec1 = `<div class="ov-sec">1 · Control &amp; condition</div><div class="ov-g2">
-    ${ovCard('Control-wise', `${n} hostels`, 'Who controls the building', `
+    ${ovCard('Administrative Control', `${n} hostels`, '', `
       <div class="ov-row">${ovDonut([
           { n: ctrl.moyas.length, color: OV_C.moyas, title: 'MoYAS / MY Bharat', k: drill('Under MoYAS / MY Bharat', ctrl.moyas) },
           { n: ctrl.other.length, color: OV_C.other, title: 'Other authority', k: drill('Under other authority', ctrl.other) },
@@ -2100,14 +2100,14 @@ function renderKpis(){
           ${ovHbar(`<i style="display:inline-block;width:10px;height:10px;background:${OV_C.nr};border-radius:2px;margin-right:5px"></i>Not reported`, [{ n: ctrl.nr.length, color: OV_C.nr }], ctrl.nr.length, n, drill('Control not reported', ctrl.nr))}
           ${otherTxt ? `<p class="ov-sub" style="margin:8px 0 0">Other authority: ${otherTxt}</p>` : ''}
         </div></div>`)}
-    ${ovCard('Building condition', 'split by control', 'Fully functional → dilapidated', condBars + ovLegend([[OV_C.moyas, 'MoYAS / MY Bharat'], [OV_C.other, 'Other authority'], [OV_C.nr, 'Control not reported']]))}
+    ${ovCard('Building condition', '', '', condBars + ovLegend([[OV_C.moyas, 'MoYAS / MY Bharat'], [OV_C.other, 'Other authority'], [OV_C.nr, 'Control not reported']]))}
   </div>`;
 
   const top5Html = top5.length ? `<table style="margin-top:10px"><tr><th>Top 5 by funds</th><th style="text-align:right">Savings</th><th style="text-align:right">Current</th><th style="text-align:right">FD</th><th style="text-align:right">Total</th></tr>
     ${top5.map(h => `<tr class="ov-click" data-drill="${drill(h.name || h.district, [h])}"><td>${esc(h.name || h.district)}</td><td style="text-align:right">${fmtINR(h.funds_savings)}</td><td style="text-align:right">${fmtINR(h.funds_current)}</td><td style="text-align:right">${fmtINR(h.funds_fd)}</td><td style="text-align:right"><b>${fmtINR(hostelFunds(h))}</b></td></tr>`).join('')}</table>` : '<div class="ov-empty">No funds entered yet.</div>';
 
   const sec2 = `<div class="ov-sec">2 · Money in hand &amp; people</div><div class="ov-g2">
-    ${ovCard('Funds available with hostels', 'Savings + Current + FD', `Total ${fmtINR(fundsTotal)}`, `
+    ${ovCard('Funds available with hostels', `Total ${fmtINR(fundsTotal)}`, `
       ${ovStack([{ n: sv, color: '#1d5cff', text: 'Savings ' + fmtINR(sv) }, { n: cu, color: '#7aa2ff', text: 'Current ' + fmtINR(cu) }, { n: fd, color: '#0e3a9e', text: 'FD ' + fmtINR(fd) }], fundsTotal, 22)}
       ${ovLegend([['#1d5cff', 'Savings ' + fmtINR(sv)], ['#7aa2ff', 'Current ' + fmtINR(cu)], ['#0e3a9e', 'Fixed Deposit ' + fmtINR(fd)]])}
       <div class="ov-mini">
@@ -2115,7 +2115,7 @@ function renderKpis(){
         ${ovMini(fmtINR(median), 'median funds per hostel')}
         ${ovMini(noFunds.length, 'hostels with no funds reported', noFunds.length ? 'ov-warn' : '', drill('No funds reported', noFunds))}
       </div>${top5Html}`)}
-    ${ovCard('Manager / DYO status', `${n} hostels`, 'Who is running the hostel', `
+    ${ovCard('Manager / DYO status', `${n} hostels`, '', `
       ${ovStack([{ n: both.length, color: OV_C.good, text: 'DYO + Manager · ' + both.length, k: drill('DYO + Manager', both) },
                  { n: onlyDyo.length, color: OV_C.warn, text: 'Only DYO · ' + onlyDyo.length, k: drill('Only DYO (no manager)', onlyDyo) },
                  { n: mgrNr.length, color: OV_C.nr, text: String(mgrNr.length), k: drill('Manager status not reported', mgrNr) }], n, 26)}
