@@ -1246,8 +1246,8 @@ async function onLoggedIn(user){
   document.getElementById('mainWrap').style.display = 'block';
   document.getElementById('whoName').textContent = profile.full_name || user.email;
   document.getElementById('whoRole').textContent = profile.role === 'admin' ? 'Administrator - HQ'
-    : profile.role === 'state' ? `State Officer — ${profile.state}`
-    : `District Officer — ${profile.district}, ${profile.state}`;
+    : profile.role === 'state' ? `State Officer - ${profile.state}`
+    : `District Officer - ${profile.district}, ${profile.state}`;
   document.getElementById('scopeText').textContent = profile.role === 'admin'
     ? 'Overview shows all hostels by default. Use the dropdowns above to filter to a state/district. Registry shows every hostel and you can edit any of them.'
     : profile.role === 'state'
@@ -3757,7 +3757,7 @@ function renderFeedHmc(){
     const when = n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : `in ${n} days`;
     return `<button type="button" class="feed-item hmc-up" data-act="hmc">
       <span class="fi-icon">🔔</span>
-      <span class="fi-body"><span class="fi-title">Upcoming HMC — ${esc(fmtShortDate(r.meeting_date))} (${when})</span>
+      <span class="fi-body"><span class="fi-title">Upcoming HMC - ${esc(fmtShortDate(r.meeting_date))} (${when})</span>
       <span class="fi-text">${esc(where(r))}</span></span></button>`;
   });
   const pend = pending.map(r => {
