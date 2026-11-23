@@ -2166,7 +2166,7 @@ function renderKpis(){
       <td><span class="ov-pipe" style="width:${x.m * 6}px;background:${OV_C.moyas}"></span><span class="ov-pipe" style="width:${x.o * 6}px;background:${OV_C.other};margin-left:2px"></span> <span style="color:var(--muted);font-size:11px">${x.m} / ${x.o}</span></td></tr>`).join('')
     + `<tr class="ov-click" data-drill="${drill('Renovation status not reported', renoNr)}"><td style="color:var(--muted)">Not reported</td><td><span class="ov-pipe" style="width:${renoNr.length / stageMax * 100}%;background:${OV_C.nr}"></span></td><td style="text-align:right"><b>${renoNr.length}</b></td><td></td><td></td><td></td></tr>`;
   const sec4 = `<div class="ov-sec">4 · Renovation / construction proposals</div>
-    ${ovCard('Proposal pipeline — status wise with amount', '', ' ', `
+    ${ovCard('Proposal pipeline - Status', '', ' ', `
       <table><tr><th style="width:27%">Stage</th><th style="width:30%">Hostels</th><th style="text-align:right">Count</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Avg / hostel</th><th>MoYAS / other</th></tr>${pipeRows}</table>
       <div class="ov-mini" style="grid-template-columns:repeat(4,1fr)">
         ${ovMini(notSanctioned.length, 'awaiting / submitted (not yet sanctioned)', '', drill('Proposal awaited or submitted', notSanctioned))}
