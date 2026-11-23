@@ -2149,10 +2149,10 @@ function renderKpis(){
           { n: hmcQ.none.length, color: OV_C.bad, title: 'Not held / not scheduled', k: drill('No HMC held or scheduled', hmcQ.none) }],
           pctOf(hmcQ.ok.length + hmcQ.pend.length, n) + '%', 'held this qtr', 124)}
         <div style="flex:1;min-width:0;">
-          ${ovHbar('✅ Held, minutes uploaded', [{ n: hmcQ.ok.length, color: OV_C.good }], hmcQ.ok.length, n, drill('HMC held, minutes uploaded', hmcQ.ok))}
-          ${ovHbar('📝 Held, minutes pending', [{ n: hmcQ.pend.length, color: OV_C.warn }], hmcQ.pend.length, n, drill('HMC held, minutes pending', hmcQ.pend))}
-          ${ovHbar('🔔 Scheduled', [{ n: hmcQ.sched.length, color: '#7aa2ff' }], hmcQ.sched.length, n, drill('HMC scheduled', hmcQ.sched))}
-          ${ovHbar('⛔ Not held / scheduled', [{ n: hmcQ.none.length, color: OV_C.bad }], hmcQ.none.length, n, drill('No HMC held or scheduled', hmcQ.none))}
+          ${ovHbar('Held, minutes uploaded', [{ n: hmcQ.ok.length, color: OV_C.good }], hmcQ.ok.length, n, drill('HMC held, minutes uploaded', hmcQ.ok))}
+          ${ovHbar('Held, minutes pending', [{ n: hmcQ.pend.length, color: OV_C.warn }], hmcQ.pend.length, n, drill('HMC held, minutes pending', hmcQ.pend))}
+          ${ovHbar('Scheduled', [{ n: hmcQ.sched.length, color: '#7aa2ff' }], hmcQ.sched.length, n, drill('HMC scheduled', hmcQ.sched))}
+          ${ovHbar('Not held / scheduled', [{ n: hmcQ.none.length, color: OV_C.bad }], hmcQ.none.length, n, drill('No HMC held or scheduled', hmcQ.none))}
         </div></div>
       <p class="ov-sub" style="margin:8px 0 0"><span class="ov-click" data-drill="${drill('No HMC held in FY ' + fyL, noHmcFy)}" style="text-decoration:underline dotted;">${noHmcFy.length} hostel${noHmcFy.length === 1 ? '' : 's'}</span> have not held any HMC in FY ${fyL}</p>`)}
   </div>`;
